@@ -1,0 +1,386 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>Graficos 2 Proyecto 2</title>
+	<script src="js/three.js"></script>
+	<script type="text/javascript" src="js/ndollar.js"></script>
+	<script type="text/javascript" src="js/Class/class.js"></script>
+	<script type="text/javascript" src="js/poly2tri.js"></script>
+	<script type="text/javascript" src="js/Modules/Triangulation.js"></script>
+	<script type="text/javascript" src="js/Modules/SpineGenerator2.js"></script>
+	<script type="text/javascript" src="js/Modules/Pruning.js"></script>
+	<script type="text/javascript" src="js/Modules/ResamplePoints.js"></script>
+	<script type="text/javascript" src="js/Modules/3dGeneration.js"></script>
+	<script type="text/javascript" src="js/Modules/FinalTriangulation.js"></script>
+	<script type="text/javascript" src="js/Modules/DrawWebGl.js"></script>
+	<script type="text/javascript"> 
+		var escena,escena2;
+		var camara,camara2;
+		var render,render2;
+		var value = 0.01;
+		var canvasRect = {x: 19, y: 25, width: 800, height: 400};//var canvasRect = {x: 19, y: 138, width: 800, height: 400};
+		var canvasWidth = 800;
+		var canvasHeight = 400;
+		var value2 = 10;
+		var lastTime;
+		
+		/*var triangle;
+		var triangulo;
+		var cube;*/
+		/**/
+		var geometry;
+		var linea;
+		var puntos;
+		//var spotLight;
+		/* Contiene todas los objetos lineas para la graficacion en opengl del trazo generado por el usuario */
+		var stroke = [];
+		/* Objeto poligono grafico webGl*/
+		var polygonWebGLResample;
+		/* Lista de triangulos webgl del plano basico*/
+		var basicPlaneWebGL=[];
+		/* Lista de triangulos finales webgl */
+		var finalTrianglesWebGl = [];
+		/* Lista de triangulos finales generados despues de la elevacion */
+		var object3DSolid =[];
+
+		function webGLStart() {
+			document.onselectstart = function() { return false; }
+			document.onmousedown = function() { return false; }
+			puntos = new Array();
+			init();
+			renderEscena();
+			renderEscena2();
+			pressed = false; // si el mouse se encuentra presionado
+		}
+
+		function init(){
+			/* Inicializo las 2 escenas */
+			render = new THREE.WebGLRenderer();
+			render.setClearColor(0xECF8FA, 1);
+			render.setSize(canvasWidth, canvasHeight);
+			document.getElementById("myCanvas").appendChild(render.domElement);		
+
+			render2 = new THREE.WebGLRenderer();
+			render2.setClearColor(0xECF8FA, 1);
+			render2.setSize(canvasWidth, canvasHeight);
+			document.getElementById("myCanvas2").appendChild(render2.domElement);		
+			initScene();  
+		}
+
+
+		function initScene()
+		{	
+			
+			var spotLight = new THREE.SpotLight( 0xFFFFFF );
+			spotLight.position.set( 0,0,400);	
+			var luzAmbiente = new THREE.AmbientLight(0xffffff);	
+			spotLight.castShadow = true;
+			escena = new THREE.Scene();
+			var axis = new THREE.AxisHelper(500);
+			escena.add(axis);
+			escena.add( spotLight );
+			camara = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
+			camara.position.set(0, 0, 500);
+			camara.lookAt(escena.position);
+			escena.add(camara);
+
+			escena2 = new THREE.Scene();
+			var axis2 = new THREE.AxisHelper(500);
+			escena2.add(axis2);
+			escena2.add( spotLight );
+			//escena.add(luzAmbiente);
+			//escena.add( luzDireccional );
+			camara2= new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
+			//camara.position.set(200, 200, 500);
+			camara2.position.set(0, 0, 500);
+			camara2.lookAt(escena.position);
+			escena2.add(camara2);
+
+			/* var material = new THREE.MeshLambertMaterial({color: 0x7777ff, side:THREE.DoubleSide, wireframe : false});
+			 var cuboGeometry = new THREE.CubeGeometry(100,100,100);
+
+			cube = new THREE.Mesh(cuboGeometry,material);
+			cube.position.x = 2;
+			cube.position.y = 2;
+			cube.position.z = -2;
+
+			//escena.add(cube);
+
+			//Triángulo
+			var trianguloGeometria = new THREE.Geometry();
+
+			trianguloGeometria.vertices.push(new THREE.Vector3( 50.0, 0.0, 50.0));
+			trianguloGeometria.vertices.push(new THREE.Vector3(150.0 ,0.0, 50.0));
+			trianguloGeometria.vertices.push(new THREE.Vector3( 100.0, 100.0, 50.0));
+
+			trianguloGeometria.faces.push(new THREE.Face3(0, 1, 2));
+			trianguloGeometria.computeFaceNormals();
+			triangulo = new THREE.Mesh(trianguloGeometria, material);
+			// triangulo.position.set(-1.5, 0.0, -7.0);
+			//triangulo.position.set(0, 0, -2.0);
+			//escena.add(triangulo);
+			*/
+			
+
+		}
+
+		function renderEscena()
+		{
+			render.render(escena, camara);
+		}
+		function renderEscena2()
+		{
+			render2.render(escena2, camara2);
+		}
+
+		function mouseDownEvent(x, y)
+		{	
+			clearCanvas();
+
+			pressed = true;
+			
+			/* Coordenadas referentes al div en el cual se va a dibujar*/
+			x -= canvasRect.x; 
+			y -= canvasRect.y - getScrollY();
+
+			/* coordenadas referentes a la camara*/
+			x = x - (canvasWidth/2);
+			y = (canvasHeight/2) - y;
+
+			puntos.length = 1; 
+			puntos[0] = new Point(x, y);
+
+			//console.info(x,y);
+		}
+
+		function mouseMoveEvent(x, y)
+		{	
+			if (pressed)
+			{	
+				x -= canvasRect.x; 
+				y -= canvasRect.y - getScrollY();
+
+				/* coordenadas referentes a la camara*/
+				x = x - (canvasWidth/2);
+				y = (canvasHeight/2) - y;
+
+				puntos.push(new Point(x, y));
+				drawStroke(puntos.length - 2, puntos.length - 1);
+			}
+			
+		}
+
+		function mouseUpEvent(x, y)
+		{	
+			if (pressed)
+			{
+
+				removeObject(stroke,escena);
+
+				pressed=false;
+
+				get3dObject(puntos,20,4);
+								
+				lastTime = Date.now();
+				animarEscena();
+
+				/*var verticesEjemplos = [[350,75],[379,161],[469 ,161],[397 ,215],[423 ,301],[350 ,250],[277 ,301],[303 ,215],[231 ,161],[321 ,161]];
+				//Coordenadas referente a la camara
+				for(var i = 0; i < verticesEjemplos.length ; i++){
+					var v = verticesEjemplos[i];
+					v[0] = v[0] - (canvasWidth/2);
+					v[1] = (canvasHeight/2) - v[1];
+				}
+
+				var vertexExamples = [];
+				var edgesExamples = [];
+				for(var i = 0; i < verticesEjemplos.length ; i++){
+					var v = verticesEjemplos[i];
+					var vNew = new Vertex(v[0],v[1],0);
+					vertexExamples.push(vNew);
+				}
+					
+
+					for(var i = 1; i < vertexExamples.length ; i++){
+						var v1 = vertexExamples[i-1];
+						var v2 = vertexExamples[i];
+						var edge = new Edge(v1,v2,0);
+						edgesExamples.push(edge);
+					}
+					var v1 = vertexExamples[vertexExamples.length-1];
+					var v2 = vertexExamples[0];
+					var edge = new Edge(v1,v2,0);
+					edgesExamples.push(edge);
+
+					polygon = new Polygon(vertexExamples,edgesExamples);*/
+					//poligono.draw(poligono,canvas_context);
+				
+				//polygonWebGLResample = drawPolygonWebGl(polygon,escena,renderEscena);
+			}
+			
+		}
+
+		/* Genera el objeto en 3 dimensiones*/
+		function get3dObject(puntos,samplePoints1,samplePoints2){
+			
+			/* Genero el plano de triangulos haciendo uso la triangulacion de delauney */
+			var plane = delaunay_triangulation_usingPoly2tri(puntos,samplePoints1);
+			//plane = generateBasicTriangulation(polygon);
+			//basicPlaneWebGL = drawTriangles(plane,escena);
+
+			/* Realizo la poda de triangulos para la elevacion */
+			var resultPlanePruning = pruning(plane);
+			//finalTrianglesWebGl = drawTriangles(resultPlanePruning,escena);
+
+			/* Genero la espina del stroke para su elevacion */
+			var spine = generateSpine(resultPlanePruning);
+			
+			/* Realizo la triangulacion final */
+			finalTriangulation(resultPlanePruning,spine);
+			
+			/* Obtengo la lista de triangulos para la graficacion en la escena correspondiente  */	
+			finalTrianglesWebGl = drawTriangles(resultPlanePruning,escena,false);
+
+			/* Realizo la triangulacion dandole la coordenada en Z */
+			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
+				
+			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
+			object3DSolid = drawTriangles(object3D,escena2,true);
+		}
+
+		function clearCanvas(){
+			/* Remuevo los puntos remuestreados */
+			removeObject(polygonWebGLResample, escena);
+			/* Remuevo el plano de triangulos de la triangulacion basica*/
+			removeObject(basicPlaneWebGL,escena);
+			/* Remuevo el plano de triangulos finales*/
+			removeObject(finalTrianglesWebGl,escena);
+			/* Remuevo el plano de triangulos finales en 3d*/
+			removeObject(object3DSolid,escena2);
+		}
+
+		/* Remueve un objeto de la escena*/
+		function removeObject(object,scene){
+			if(object==null)
+				return
+			if (object instanceof Array)
+			{
+				for(var i = 0; i < object.length ; i++){
+					var o = object[i];
+					scene.remove(o);
+				}
+			}
+			else{
+				scene.remove(object);
+			}
+		}
+
+		function clear(){
+			initScene();
+			renderEscena();
+		}
+
+		function getScrollY()
+		{
+			var scrollY = 0;
+			if (typeof(document.body.parentElement) != 'undefined'){
+				scrollY = document.body.parentElement.scrollTop; }
+			else if (typeof(window.pageYOffset) != 'undefined'){
+				scrollY = window.pageYOffset; }
+			return scrollY;
+		}
+
+		function drawStroke(from, to)
+		{	
+			var p1 = [puntos[from].X, puntos[from].Y,0];
+			var p2 = [puntos[to].X, puntos[to].Y,0];
+			drawStrokeLine(p1,p2,stroke,escena);
+			renderEscena();
+		}
+
+		function animarEscena()
+		{
+
+			var tiempo = (Date.now() - lastTime)/1000;//Divido porque esta en miliseg y lo quiero en segundos
+			if(tiempo > 0){
+				//console.info("animando",object3DSolid.length);
+				for(var i = 0;i<object3DSolid.length;i++){
+					var triangle = object3DSolid[i];
+					//console.info(triangle.rotation.x);
+					triangle.rotation.x += value;
+				}
+				for(var i = 0;i<finalTrianglesWebGl.length;i++){
+					var triangle = finalTrianglesWebGl[i];
+					//console.info(triangle.rotation.x);
+					//triangle.rotation.x += value;
+				}
+				renderEscena();
+				renderEscena2();
+			}
+			lastTime=Date.now();
+    		//requestAnimationFrame(animarEscena);
+    		setTimeout(animarEscena,1000/24) //1.6 60 frames por segundo
+		}
+
+	</script>
+</head>
+
+<body onload="webGLStart()">
+<header>
+	<!--<h1 style="color: blue;">Proyecto#2 Graficos Por Computadora II - ESPOL 2015-II</h1>
+	<h2 style=";margin-left: 120px;">Grupo#6 Raul Mira / Ricardo Maya / Jose Monar </h2>-->
+</header
+<!-- Gesture image and canvas -->
+<table border="0" width="100%" cellspacing="10">
+	<tr>
+		<td valign="top" width="50%">
+			<div id="myCanvas" width=800 height=400 style="background-color:#ECF8FA; border:3px solid #000000;"
+					onmousedown="mouseDownEvent(event.clientX, event.clientY)"
+					onmousemove="mouseMoveEvent(event.clientX, event.clientY)"
+					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
+					oncontextmenu="return false;">
+			</div>
+		</td>
+
+		
+		<td valign="top" width="100%">
+			<h2>Colores Representativos </h2>
+			<h2 style="color: red;">Cabeza = rojo </h2>
+			<h2 style="color: blue;">Cuerpo = azul </h2>
+			<h2 style="color: green;">Brazo izquierdo = verde</h2>
+			<h2 style="color: orange;">Brazo derecho = naranja </h2>
+			<h2 style="color: brown;">Pierna izquierda = cafe </h2>
+			<h2 style="color: purple;">Pierna derecha = morado </h2>
+				<button style="background-color:#44c767;
+					-moz-border-radius:28px;
+					-webkit-border-radius:28px;
+					border-radius:28px;
+					border:1px solid #18ab29;
+					display:inline-block;
+					cursor:pointer;
+					color:#ffffff;
+					font-family:Arial;
+					font-size:17px;
+					padding:16px 31px;
+					text-decoration:none;
+					text-shadow:0px 1px 0px #2f6627;"  
+					type="button"
+					onclick="buttonOnClick()"
+				>Limpiar</button>
+			
+		</td>
+	</tr>
+	<tr>
+		<td valign="top" width="50%">
+			<div id="myCanvas2" width=800 height=400 style="background-color:#ECF8FA; border:3px solid #000000;"
+					onmousedown="mouseDownEvent(event.clientX, event.clientY)"
+					onmousemove="mouseMoveEvent(event.clientX, event.clientY)"
+					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
+					oncontextmenu="return false;">
+			</div>
+		</td>
+	</tr>
+</table>
+</body>
+</html>
+
