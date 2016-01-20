@@ -23,6 +23,7 @@ function generate3dObject(spine,triangles,samples){
 		var v3 = t.vTriangle[2];
 		var type = t.type;
 		object3D = object3D.concat(getZvalueInTriangle(v1,v2,v3,spineHeight,type,samples));
+
 	}
 	return object3D;
 }
@@ -262,10 +263,10 @@ function getZvalueInTriangle(v1,v2,v3,heigh,type,samples){
 	/* v1 y v2 forman parte de la espina*/
 	if(type == 1)
 	{
-		//rise1 = heigh.get(v1)/value;// La altura que va a crecer dado el vertice v1 que es el promedio a todos los vertices externos
-		//rise2 = heigh.get(v2)/value;// La altura que va a crecer dado el vertice v2 que es el promedio a todos los vertices externos
-		sewEdgesPoints1 = getZvalue2(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
-		sewEdgesPoints2 = getZvalue2(v2,v3,rise2,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
+		rise1 = heigh.get(v1)/value;// La altura que va a crecer dado el vertice v1 que es el promedio a todos los vertices externos
+		rise2 = heigh.get(v2)/value;// La altura que va a crecer dado el vertice v2 que es el promedio a todos los vertices externos
+		sewEdgesPoints1 = getZvalue3(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
+		sewEdgesPoints2 = getZvalue3(v2,v3,rise2,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
 		finalTriangles = getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,1);
 	}
 
@@ -273,9 +274,9 @@ function getZvalueInTriangle(v1,v2,v3,heigh,type,samples){
 	else if(type == 0)
 	{	
 		
-		//rise1 = heigh.get(v1)/value;// La altura que va a crecer dado el vertice v1 que es el promedio a todos los vertices externos
-		sewEdgesPoints1 = getZvalue2(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
-		sewEdgesPoints2 = getZvalue2(v1,v2,rise1,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
+		rise1 = heigh.get(v1)/value;// La altura que va a crecer dado el vertice v1 que es el promedio a todos los vertices externos
+		sewEdgesPoints1 = getZvalue3(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
+		sewEdgesPoints2 = getZvalue3(v1,v2,rise1,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
 		finalTriangles = getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,0);
 	}
 	return finalTriangles;
@@ -327,6 +328,61 @@ function getZvalue2(v1,v2,rise,sample){
 	return vertexPoints;
 }
 
+function getZvalue3(v1,v2,rise,sample){
+	
+	/* Numero de muestras a evaluar en Z */
+	var steps = 40;
+	/* Distancia de v1 a v2 */
+	var distance = v1.distance(v2);
+
+
+	var distancesValues = function(distance,steps){
+		var result = [];
+		var step = distance/steps;
+		for(var i = 0; i< distance-0.5;i = i+step)
+			result.push(i);
+		result.push(distance);
+		return result;
+	};
+
+	/* Obtiene un arreglo desde 0(distancia de v1 a v1) a distance, dado el valor de paso */
+	var distances = distancesValues(distance,steps);
+
+	/* Obtiene los valores Z para cada distancia y crea un objeto Point*/
+	var newPoints = distances.map(function(L){
+		var a = distance;
+		var b = rise;
+		var Z = b*(Math.sqrt(1-((L*L)/(a*a)))); //Ecuacion de la elipse
+		return new Point(L,Z);
+	});
+
+	var resamplePointsFunction = function(points,sample){
+
+		var result = [];
+		var step = parseInt(points.length/(sample+1));
+		var value = step;
+		result.push(points[0]);
+		while(value<points.length-1){
+			result.push(points[value])
+			value = value+step;
+		}
+		result.push(points[points.length-1]);
+		return result;
+	};
+
+	/* Remuestrea los puntos obtenidos para que sean equidistantes */
+	var resamplePoints = Resample(newPoints,sample);
+	
+	var finalPoints = resamplePoints.map(function(point){
+		var i = ((v2.X - v1.X)/distance) * point.X;
+		var j = ((v2.Y - v1.Y)/distance) * point.X;
+		//console.info("j",v2.Y,v1.Y)
+		return new Vertex(v1.X + i,v1.Y +j,point.Y);
+	});
+
+	return finalPoints;
+}
+
 
 /* Genera los triangulos finales usando los puntos de elevacion*/
 function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
@@ -335,6 +391,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 	/* Si 2 vertices pertenecen a la espina dorsal*/
 	if(type==1){
 		for(var i = 1; i < sewEdgesPoints1.length-1; i++){
+			
 			/* Genera el primer triangulo*/
 			t1 = sewEdgesPoints1[i-1];
 			t2 = sewEdgesPoints2[i-1];
@@ -343,7 +400,9 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 			e2 = new Edge(t1,t3,5);
 			e3 = new Edge(t2,t3,5);
 
-			triangle = new Triangle(t1,t2,t3,[e1,e2,e3]);
+			triangle = new Triangle(t1,t3,t2,[e1,e2,e3]);
+			//triangle.reorderClockWiseVertex();
+
 			finalTriangles.push(triangle);
 			/* Genera el segundo triangulo*/
 			t1 = sewEdgesPoints1[i-1];
@@ -353,10 +412,13 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 			e2 = new Edge(t1,t3,5);
 			e3 = new Edge(t2,t3,5);
 
-			triangle = new Triangle(t1,t2,t3,[e1,e2,e3]);
+			
+			triangle = new Triangle(t1,t3,t2,[e1,e2,e3]);
+			//triangle.reorderClockWiseVertex();
 			finalTriangles.push(triangle);
 			//triangle.draw3(canvas_context);
 			//console.info(triangle);
+		
 		}
 		/* Genera el ultimo triangulo*/
 		t1 = sewEdgesPoints1[sewEdgesPoints1.length - 2];
@@ -366,7 +428,8 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 		e2 = new Edge(t1,t3,5);
 		e3 = new Edge(t2,t3,5);
 
-		triangle = new Triangle(t1,t2,t3,[e1,e2,e3]);
+		triangle = new Triangle(t1,t3,t2,[e1,e2,e3]);
+		triangle.reorderClockWiseVertex();
 		finalTriangles.push(triangle);
 		return finalTriangles;
 	}

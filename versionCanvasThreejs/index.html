@@ -24,6 +24,7 @@
 		var value2 = 10;
 		var lastTime;
 		
+		var TECLA = { ARRIBA:false, ABAJO:false, IZQUIERDA:false, DERECHA:false};
 		/*var triangle;
 		var triangulo;
 		var cube;*/
@@ -46,6 +47,8 @@
 		function webGLStart() {
 			document.onselectstart = function() { return false; }
 			document.onmousedown = function() { return false; }
+			document.onkeydown=teclaPulsada;
+    		document.onkeyup=teclaSoltada;
 			puntos = new Array();
 			init();
 			renderEscena();
@@ -72,13 +75,16 @@
 		{	
 			
 			var spotLight = new THREE.SpotLight( 0xFFFFFF );
-			spotLight.position.set( 0,0,400);	
-			var luzAmbiente = new THREE.AmbientLight(0xffffff);	
-			spotLight.castShadow = true;
+			var spotLight2 = new THREE.SpotLight( 0xFFFFFF );
+			spotLight.position.set( 0,0,800);
+			spotLight2.position.set(100,500,400);
+			var luzAmbiente = new THREE.AmbientLight(0xff4fff);	
+			//wspotLight.castShadow = true;
 			escena = new THREE.Scene();
 			var axis = new THREE.AxisHelper(500);
 			escena.add(axis);
 			escena.add( spotLight );
+			escena.add(luzAmbiente);
 			camara = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
 			camara.position.set(0, 0, 500);
 			camara.lookAt(escena.position);
@@ -88,6 +94,8 @@
 			var axis2 = new THREE.AxisHelper(500);
 			escena2.add(axis2);
 			escena2.add( spotLight );
+			//escena2.add( spotLight2 );
+			//escena2.add(luzAmbiente);
 			//escena.add(luzAmbiente);
 			//escena.add( luzDireccional );
 			camara2= new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
@@ -135,7 +143,7 @@
 
 		function mouseDownEvent(x, y)
 		{	
-			clearCanvas();
+			//clearCanvas();
 
 			pressed = true;
 			
@@ -179,43 +187,11 @@
 
 				pressed=false;
 
-				get3dObject(puntos,20,4);
+				get3dObject(puntos,20,10);
 								
 				lastTime = Date.now();
 				animarEscena();
 
-				/*var verticesEjemplos = [[350,75],[379,161],[469 ,161],[397 ,215],[423 ,301],[350 ,250],[277 ,301],[303 ,215],[231 ,161],[321 ,161]];
-				//Coordenadas referente a la camara
-				for(var i = 0; i < verticesEjemplos.length ; i++){
-					var v = verticesEjemplos[i];
-					v[0] = v[0] - (canvasWidth/2);
-					v[1] = (canvasHeight/2) - v[1];
-				}
-
-				var vertexExamples = [];
-				var edgesExamples = [];
-				for(var i = 0; i < verticesEjemplos.length ; i++){
-					var v = verticesEjemplos[i];
-					var vNew = new Vertex(v[0],v[1],0);
-					vertexExamples.push(vNew);
-				}
-					
-
-					for(var i = 1; i < vertexExamples.length ; i++){
-						var v1 = vertexExamples[i-1];
-						var v2 = vertexExamples[i];
-						var edge = new Edge(v1,v2,0);
-						edgesExamples.push(edge);
-					}
-					var v1 = vertexExamples[vertexExamples.length-1];
-					var v2 = vertexExamples[0];
-					var edge = new Edge(v1,v2,0);
-					edgesExamples.push(edge);
-
-					polygon = new Polygon(vertexExamples,edgesExamples);*/
-					//poligono.draw(poligono,canvas_context);
-				
-				//polygonWebGLResample = drawPolygonWebGl(polygon,escena,renderEscena);
 			}
 			
 		}
@@ -224,7 +200,7 @@
 		function get3dObject(puntos,samplePoints1,samplePoints2){
 			
 			/* Genero el plano de triangulos haciendo uso la triangulacion de delauney */
-			var plane = delaunay_triangulation_usingPoly2tri(puntos,samplePoints1);
+			var plane = delaunay_triangulation_usingPoly2tri(puntos,40);
 			//plane = generateBasicTriangulation(polygon);
 			//basicPlaneWebGL = drawTriangles(plane,escena);
 
@@ -245,7 +221,7 @@
 			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
 				
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
-			object3DSolid = drawTriangles(object3D,escena2,true);
+			object3DSolid = draw3dObject(object3D,escena2,false,"rgb(255,0,0)");
 		}
 
 		function clearCanvas(){
@@ -257,6 +233,10 @@
 			removeObject(finalTrianglesWebGl,escena);
 			/* Remuevo el plano de triangulos finales en 3d*/
 			removeObject(object3DSolid,escena2);
+		}
+
+		function buttonOnClick(){
+			clearCanvas();
 		}
 
 		/* Remueve un objeto de la escena*/
@@ -304,11 +284,19 @@
 			var tiempo = (Date.now() - lastTime)/1000;//Divido porque esta en miliseg y lo quiero en segundos
 			if(tiempo > 0){
 				//console.info("animando",object3DSolid.length);
-				for(var i = 0;i<object3DSolid.length;i++){
+				/*for(var i = 0;i<object3DSolid.length;i++){
 					var triangle = object3DSolid[i];
 					//console.info(triangle.rotation.x);
-					triangle.rotation.x += value;
-				}
+					if (TECLA.ARRIBA) triangle.rotation.x += value;
+					if (TECLA.ABAJO) triangle.rotation.x -= value;
+					if (TECLA.DERECHA) triangle.rotation.y += value;
+					if (TECLA.IZQUIERDA) triangle.rotation.y -= value;
+						
+				}*/
+				if (TECLA.ARRIBA) object3DSolid.rotation.x += value;
+				if (TECLA.ABAJO) object3DSolid.rotation.x -= value;
+				if (TECLA.DERECHA) object3DSolid.rotation.y += value;
+				if (TECLA.IZQUIERDA) object3DSolid.rotation.y -= value;
 				for(var i = 0;i<finalTrianglesWebGl.length;i++){
 					var triangle = finalTrianglesWebGl[i];
 					//console.info(triangle.rotation.x);
@@ -320,6 +308,44 @@
 			lastTime=Date.now();
     		//requestAnimationFrame(animarEscena);
     		setTimeout(animarEscena,1000/24) //1.6 60 frames por segundo
+		}
+
+		function teclaPulsada(e)
+		{
+		    switch (e.keyCode)
+		    {
+		        case 65: // Izquierda
+		            TECLA.IZQUIERDA=true;
+		            break;
+		        case 68: // Derecha
+		            TECLA.DERECHA=true;
+		            break;
+		        case 83: // Arriba
+		            TECLA.ARRIBA=true;
+		            break;
+		        case 87: // Abajo
+		            TECLA.ABAJO=true;
+		            break;
+		    }
+
+		}
+		function teclaSoltada(e)
+		{
+		    switch (e.keyCode)
+		    {
+		        case 65: // Izquierda
+		            TECLA.IZQUIERDA=false;
+		            break;
+		        case 68: // Derecha
+		            TECLA.DERECHA=false;
+		            break;
+		        case 83: // Arriba
+		            TECLA.ARRIBA=false;
+		            break;
+		        case 87: // Abajo
+		            TECLA.ABAJO=false;
+		            break;
+		    }
 		}
 
 	</script>

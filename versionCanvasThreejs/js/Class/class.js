@@ -294,7 +294,25 @@ function Triangle(v1,v2,v3,edges){
 	this.edges = edges;
 	this.type = this.setType();
 	this.vMidPoint = null;
+	this.reorderClockWiseVertex();
 }
+
+/* Reordena los puntos a favor de las manecillas del reloj */
+Triangle.prototype.reorderClockWiseVertex = function(){
+	
+	var xA = this.v1.X; var yA = this.v1.Y;
+	var xB = this.v2.X; var yB = this.v2.Y;
+	var xC = this.v3.X; var yC = this.v3.Y;
+
+	var determinant = xA*yB + xB*yC + xC*yA - yB*xC - yC*xA - yA*xB;
+	if( determinant <= 0){
+		var temp = this.v2;
+		this.v2 = this.v3;
+		this.v3 = temp;
+	}
+
+}
+
 
 /* Retorna el punto medio del triangulo*/
 Triangle.prototype.getMidPoint=function(){

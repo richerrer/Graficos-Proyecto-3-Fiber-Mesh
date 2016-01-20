@@ -1,7 +1,8 @@
 function delaunay_triangulation_usingPoly2tri(points,value){
 
 	var resamplePoints = Resample(points,value);
-	
+	console.info(" puntos ",puntos.length)
+	console.info(" puntos remuestreados ",resamplePoints.length)
 	var contour = [];
 	
 	/* Convierto los puntos en Poly2tripoints*/

@@ -20,6 +20,8 @@ function drawPolygonWebGl(polygon,scene,render){
 function drawTriangles(listTriangles,scene,solid){
 	var trianglesWebGl = [];
 	var triangleWebGl;
+	//triangleWebGl = newTriangleSolidWebGl2(listTriangles);
+
 	for(var i=0;i<listTriangles.length;i++){
 		var t = listTriangles[i];
 		if(!solid){
@@ -39,6 +41,14 @@ function drawTriangles(listTriangles,scene,solid){
 	return trianglesWebGl;
 }
 
+/* Retorna el objeto generado en 3d y lo agrega a la escena*/
+function draw3dObject(listTriangles,scene,solid,color){
+	//var trianglesWebGl = [];
+	var triangleWebGl;
+	triangleWebGl = generateMesh3dObject(listTriangles,solid,color);
+	scene.add(triangleWebGl); 
+	return triangleWebGl;
+}
 
 /* Crea una linea con 2 puntos 
 */
@@ -105,7 +115,7 @@ function newTriangleMeshWebGl(triangle){
 function newTriangleSolidWebGl(triangle){
 	var colorTrazo = "rgb(255,255,0)";; // da un color al azar al trazo
 	var geometry = new THREE.Geometry();
-	var Material=new THREE.MeshPhongMaterial({color:colorTrazo,side:THREE.DoubleSide,shading: THREE.FlatShadin});
+	var Material=new THREE.MeshPhongMaterial({color:colorTrazo,side:THREE.DoubleSide,shading: THREE.SmoothShading,wireframe: false});
 
 	var vector1 = new THREE.Vector3(triangle.v1.X,triangle.v1.Y,triangle.v1.Z);
 	var vector2 = new THREE.Vector3(triangle.v2.X,triangle.v2.Y,triangle.v2.Z);
@@ -116,6 +126,8 @@ function newTriangleSolidWebGl(triangle){
 	geometry.vertices.push(vector3);
 	geometry.faces.push(new THREE.Face3(0, 1, 2));
 	geometry.computeFaceNormals();
+
+	//var Material= new THREE.Mesh( geometry, new THREE.MeshNormalMaterial() );
 	var triangleWebGlZpositive = new THREE.Mesh(geometry,Material);
 
 	geometry = new THREE.Geometry();
@@ -128,11 +140,98 @@ function newTriangleSolidWebGl(triangle){
 	geometry.vertices.push(vector3);
 	geometry.faces.push(new THREE.Face3(0, 1, 2));
 	geometry.computeFaceNormals();
+	//var Material= new THREE.Mesh( geometry, new THREE.MeshNormalMaterial() );
 	var triangleWebGlZnegative = new THREE.Mesh(geometry,Material);
 	return [triangleWebGlZpositive,triangleWebGlZnegative];
 }
 
-gative
+/* Genera el mesh dado una lista de triangulos */
+function generateMesh3dObject(triangles,solid,color){
+	var geometry = new THREE.Geometry();
+	//var Material=new THREE.MeshLambertMaterial({color:colorTrazo,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: false});
+	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid});
+	
+	var vertices = [];
+	var mapVertex = new Map();
+
+	/* Genera el mapa de los vertices de un listado de triangulos 
+	 * key = valor entero del valor en x y z del vertice
+	 * value = indice del vertice que se usara como identificador , el objeto vertice y si el triangulo es tipo negativo o poitivo
+	 */
+	var generateMapVertex = function(triangles){
+		var map = new Map();
+		var indiceVertex = 0;
+		triangles.forEach(function(triangle,index,array){
+			[triangle.v1,triangle.v2,triangle.v3].forEach(function(vertex,index2,arrayVertex){
+				/* Positive */
+				var key = parseInt(vertex.X).toString()+parseInt(vertex.Y).toString()+parseInt(vertex.Z).toString();
+				if(!map.has(key)){
+					map.set(key,{indexValue:indiceVertex,vertex:vertex,negative:false});
+					indiceVertex++;
+				}
+				/* Negative */
+				var key = parseInt(vertex.X).toString()+parseInt(vertex.Y).toString()+parseInt(-vertex.Z).toString();
+				if(!map.has(key)){
+					map.set(key,{indexValue:indiceVertex,vertex:vertex,negative:true});
+					indiceVertex++;
+				}
+			});
+		});
+		return map;
+	};
+	var mapVertex = generateMapVertex(triangles);
+	
+
+	/* Agrgeo los vertices a la geometria 
+	*/
+	mapVertex.forEach(function(value,key,map){
+		var vector;
+		if(!value.negative) //Positivo
+			vector = new THREE.Vector3(value.vertex.X,value.vertex.Y,value.vertex.Z);
+		else // Negativo
+			vector = new THREE.Vector3(value.vertex.X,value.vertex.Y,-value.vertex.Z);
+		geometry.vertices.push(vector); 
+	});
+
+	/* Agrego las caras de los triangulos
+	*/
+	triangles.forEach(function(triangle,index,array){
+		/* Positive */
+		var key0 = parseInt(triangle.v1.X).toString()+parseInt(triangle.v1.Y).toString()+parseInt(triangle.v1.Z).toString();
+		var key1 = parseInt(triangle.v2.X).toString()+parseInt(triangle.v2.Y).toString()+parseInt(triangle.v2.Z).toString();
+		var key2 = parseInt(triangle.v3.X).toString()+parseInt(triangle.v3.Y).toString()+parseInt(triangle.v3.Z).toString();
+		if( ! (mapVertex.has(key0) && mapVertex.has(key1) && mapVertex.has(key2)) ){
+			console.info(" Error al encontrar key");
+			return
+		}
+		var i0 = mapVertex.get(key0).indexValue;
+		var i1 = mapVertex.get(key1).indexValue;
+		var i2 = mapVertex.get(key2).indexValue;
+		geometry.faces.push(new THREE.Face3(i0, i1, i2));
+
+		/* Negative */
+		var key0 = parseInt(triangle.v1.X).toString()+parseInt(triangle.v1.Y).toString()+parseInt(-triangle.v1.Z).toString();
+		var key1 = parseInt(triangle.v2.X).toString()+parseInt(triangle.v2.Y).toString()+parseInt(-triangle.v2.Z).toString();
+		var key2 = parseInt(triangle.v3.X).toString()+parseInt(triangle.v3.Y).toString()+parseInt(-triangle.v3.Z).toString();
+		if( ! (mapVertex.has(key0) && mapVertex.has(key1) && mapVertex.has(key2)) ){
+			console.info(" Error al encontrar key");
+			return
+		}
+		var i0 = mapVertex.get(key0).indexValue;
+		var i1 = mapVertex.get(key1).indexValue;
+		var i2 = mapVertex.get(key2).indexValue;
+		geometry.faces.push(new THREE.Face3(i0, i1, i2));
+	});
+
+	geometry.computeFaceNormals();
+	geometry.computeVertexNormals();
+	
+	var triangleWebGlZpositive = new THREE.Mesh(geometry,Material);
+
+	return triangleWebGlZpositive;
+}
+
+
 
 function draw(obj,escena,render,object3D)
 {
