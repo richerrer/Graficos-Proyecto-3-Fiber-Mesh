@@ -25,6 +25,9 @@
 		var lastTime;
 		
 		var TECLA = { ARRIBA:false, ABAJO:false, IZQUIERDA:false, DERECHA:false};
+
+		/* Modo de interaccion del usuario con el mouse*/
+		var MODE = { SKETCH:true, ROTATION:false };
 		/*var triangle;
 		var triangulo;
 		var cube;*/
@@ -43,17 +46,23 @@
 		var finalTrianglesWebGl = [];
 		/* Lista de triangulos finales generados despues de la elevacion */
 		var object3DSolid =[];
+		/* Posicion previa del mouse para el modo rotation */
+		var previousMousePosition = {x: 0,y: 0};
+		/*si el mouse se encuentra presionado*/
+		var pressed = false;
 
 		function webGLStart() {
 			document.onselectstart = function() { return false; }
 			document.onmousedown = function() { return false; }
 			document.onkeydown=teclaPulsada;
     		document.onkeyup=teclaSoltada;
-			puntos = new Array();
+			puntos = [];
 			init();
-			renderEscena();
-			renderEscena2();
-			pressed = false; // si el mouse se encuentra presionado
+			//renderEscena();
+			//renderEscena2();
+			pressed = false;
+			lastTime = Date.now();
+			animarEscena();
 		}
 
 		function init(){
@@ -69,7 +78,6 @@
 			document.getElementById("myCanvas2").appendChild(render2.domElement);		
 			initScene();  
 		}
-
 
 		function initScene()
 		{	
@@ -141,57 +149,65 @@
 			render2.render(escena2, camara2);
 		}
 
-		function mouseDownEvent(x, y)
+		function mouseDownEvent(e)
 		{	
-			//clearCanvas();
-
-			pressed = true;
+			var coordinates = getCoordinatesToRender(e);
 			
-			/* Coordenadas referentes al div en el cual se va a dibujar*/
-			x -= canvasRect.x; 
-			y -= canvasRect.y - getScrollY();
+			pressed = true;
 
-			/* coordenadas referentes a la camara*/
-			x = x - (canvasWidth/2);
-			y = (canvasHeight/2) - y;
+			x = coordinates.x;
+			y = coordinates.y;
 
-			puntos.length = 1; 
-			puntos[0] = new Point(x, y);
-
-			//console.info(x,y);
+			/* Modo Sketch*/
+			if(MODE.SKETCH){
+				puntos.length = 1; 
+				puntos[0] = new Point(x, y);
+			}
 		}
 
-		function mouseMoveEvent(x, y)
+		function mouseMoveEvent(e)
 		{	
-			if (pressed)
-			{	
-				x -= canvasRect.x; 
-				y -= canvasRect.y - getScrollY();
+			/* La distancia entre el punto previo y el actual*/
+			//var deltaMove = {x: e.offsetX-previousMousePosition.x,y: e.offsetY-previousMousePosition.y};
+    		//previousMousePosition = {x: e.offsetX,y: e.offsetY};
+    		var coordinates = getCoordinatesToRender(e);
+			x = coordinates.x;
+			y = coordinates.y;
+			
+			var deltaMove = {x: x-previousMousePosition.x,y: -y-previousMousePosition.y};
+    		previousMousePosition = {x: x,y: -y};
+    		
+			if(!pressed)	
+				return
 
-				/* coordenadas referentes a la camara*/
-				x = x - (canvasWidth/2);
-				y = (canvasHeight/2) - y;
-
+			/* Modo SKETCH */
+			if(MODE.SKETCH){
 				puntos.push(new Point(x, y));
 				drawStroke(puntos.length - 2, puntos.length - 1);
 			}
+
+			/* Modo ROTATION */
+			else if(MODE.ROTATION){
+				
+    			var deltaRotationQuaternion = new THREE.Quaternion()
+	            .setFromEuler(new THREE.Euler(toRadians(deltaMove.y * 1),toRadians(deltaMove.x * 1),0,'XYZ'));
+	            rotate3dObject(object3DSolid,deltaRotationQuaternion);
+			}
+			
 			
 		}
 
 		function mouseUpEvent(x, y)
 		{	
-			if (pressed)
-			{
+			if (!pressed)
+				return
+			pressed=false;
 
+			/* Genero el objeto en 3d */
+			if(MODE.SKETCH){
 				removeObject(stroke,escena);
-
-				pressed=false;
-
-				get3dObject(puntos,20,10);
-								
-				lastTime = Date.now();
-				animarEscena();
-
+				get3dObject(puntos,parseInt(stroke.length*0.2)/*30*/,8);
+				
 			}
 			
 		}
@@ -200,7 +216,7 @@
 		function get3dObject(puntos,samplePoints1,samplePoints2){
 			
 			/* Genero el plano de triangulos haciendo uso la triangulacion de delauney */
-			var plane = delaunay_triangulation_usingPoly2tri(puntos,40);
+			var plane = delaunay_triangulation_usingPoly2tri(puntos,samplePoints1);
 			//plane = generateBasicTriangulation(polygon);
 			//basicPlaneWebGL = drawTriangles(plane,escena);
 
@@ -221,7 +237,9 @@
 			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
 				
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
-			object3DSolid = draw3dObject(object3D,escena2,false,"rgb(255,0,0)");
+			object3DSolid.push(draw3dObject(object3D,escena2,true,"rgb(255,255,255)"));
+
+			//MODE.ROTATION = true;MODE.SKETCH = false;
 		}
 
 		function clearCanvas(){
@@ -283,25 +301,7 @@
 
 			var tiempo = (Date.now() - lastTime)/1000;//Divido porque esta en miliseg y lo quiero en segundos
 			if(tiempo > 0){
-				//console.info("animando",object3DSolid.length);
-				/*for(var i = 0;i<object3DSolid.length;i++){
-					var triangle = object3DSolid[i];
-					//console.info(triangle.rotation.x);
-					if (TECLA.ARRIBA) triangle.rotation.x += value;
-					if (TECLA.ABAJO) triangle.rotation.x -= value;
-					if (TECLA.DERECHA) triangle.rotation.y += value;
-					if (TECLA.IZQUIERDA) triangle.rotation.y -= value;
-						
-				}*/
-				if (TECLA.ARRIBA) object3DSolid.rotation.x += value;
-				if (TECLA.ABAJO) object3DSolid.rotation.x -= value;
-				if (TECLA.DERECHA) object3DSolid.rotation.y += value;
-				if (TECLA.IZQUIERDA) object3DSolid.rotation.y -= value;
-				for(var i = 0;i<finalTrianglesWebGl.length;i++){
-					var triangle = finalTrianglesWebGl[i];
-					//console.info(triangle.rotation.x);
-					//triangle.rotation.x += value;
-				}
+				
 				renderEscena();
 				renderEscena2();
 			}
@@ -326,6 +326,13 @@
 		        case 87: // Abajo
 		            TECLA.ABAJO=true;
 		            break;
+		        case 82://R modo Rotation
+		        	MODE = { SKETCH:false, ROTATION:true };
+		       	 	break;
+		       	case 84://T modo Sketch
+		        	MODE = { SKETCH:true, ROTATION:false };
+		       	 	break;
+
 		    }
 
 		}
@@ -348,6 +355,41 @@
 		    }
 		}
 
+		/* Rota el objeto generado */
+		function rotate3dObject(object3DSolid,deltaRotationQuaternion){
+			if(object3DSolid==null)
+				return
+			if (object3DSolid instanceof Array)
+			{
+				object3DSolid.forEach(function(object){
+					object.quaternion.multiplyQuaternions(deltaRotationQuaternion, object.quaternion);
+				});
+			}
+			else{
+				object3DSolid.quaternion.multiplyQuaternions(deltaRotationQuaternion, object3DSolid.quaternion);
+			}
+		}
+
+		/* Obtiene las coordnadas referentes al render, recibiendo el evento touch*/
+		function getCoordinatesToRender(event)
+		{
+			var x = event.offsetX==undefined?event.layerX:event.offsetX;
+			var y = event.offsetY==undefined?event.layerY:event.offsetY;
+			//console.info("2",x,y);
+			/* coordenadas referentes a la camara*/
+			x = x - (canvasWidth/2);
+			y = (canvasHeight/2) - y;
+
+			return {x:x,y:y};
+		}
+
+		function toRadians(angle) {
+			return angle * (Math.PI / 180);
+		}
+
+		function toDegrees(angle) {
+			return angle * (180 / Math.PI);
+		}
 	</script>
 </head>
 
@@ -361,8 +403,8 @@
 	<tr>
 		<td valign="top" width="50%">
 			<div id="myCanvas" width=800 height=400 style="background-color:#ECF8FA; border:3px solid #000000;"
-					onmousedown="mouseDownEvent(event.clientX, event.clientY)"
-					onmousemove="mouseMoveEvent(event.clientX, event.clientY)"
+					onmousedown="mouseDownEvent(event)"
+					onmousemove="mouseMoveEvent(event)"
 					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
 					oncontextmenu="return false;">
 			</div>
@@ -399,8 +441,8 @@
 	<tr>
 		<td valign="top" width="50%">
 			<div id="myCanvas2" width=800 height=400 style="background-color:#ECF8FA; border:3px solid #000000;"
-					onmousedown="mouseDownEvent(event.clientX, event.clientY)"
-					onmousemove="mouseMoveEvent(event.clientX, event.clientY)"
+					onmousedown="mouseDownEvent(event)"
+					onmousemove="mouseMoveEvent(event)"
 					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
 					oncontextmenu="return false;">
 			</div>

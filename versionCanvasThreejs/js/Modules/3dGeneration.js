@@ -259,7 +259,7 @@ function getZvalueInTriangle(v1,v2,v3,heigh,type,samples){
 	var sewEdgesPoints2;
 	rise1 = 50;
 	rise2 = 50;
-	var value = 1.5;
+	var value = 1;
 	/* v1 y v2 forman parte de la espina*/
 	if(type == 1)
 	{
@@ -331,7 +331,7 @@ function getZvalue2(v1,v2,rise,sample){
 function getZvalue3(v1,v2,rise,sample){
 	
 	/* Numero de muestras a evaluar en Z */
-	var steps = 40;
+	var steps = 100;
 	/* Distancia de v1 a v2 */
 	var distance = v1.distance(v2);
 
@@ -429,7 +429,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 		e3 = new Edge(t2,t3,5);
 
 		triangle = new Triangle(t1,t3,t2,[e1,e2,e3]);
-		triangle.reorderClockWiseVertex();
+		//triangle.reorderClockWiseVertex();
 		finalTriangles.push(triangle);
 		return finalTriangles;
 	}

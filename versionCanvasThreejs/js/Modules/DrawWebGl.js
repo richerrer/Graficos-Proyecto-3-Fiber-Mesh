@@ -115,7 +115,7 @@ function newTriangleMeshWebGl(triangle){
 function newTriangleSolidWebGl(triangle){
 	var colorTrazo = "rgb(255,255,0)";; // da un color al azar al trazo
 	var geometry = new THREE.Geometry();
-	var Material=new THREE.MeshPhongMaterial({color:colorTrazo,side:THREE.DoubleSide,shading: THREE.SmoothShading,wireframe: false});
+	var Material=new THREE.MeshPhongMaterial({color:colorTrazo,side:THREE.FrontSide,shading: THREE.SmoothShading,wireframe: false});
 
 	var vector1 = new THREE.Vector3(triangle.v1.X,triangle.v1.Y,triangle.v1.Z);
 	var vector2 = new THREE.Vector3(triangle.v2.X,triangle.v2.Y,triangle.v2.Z);
@@ -148,7 +148,7 @@ function newTriangleSolidWebGl(triangle){
 /* Genera el mesh dado una lista de triangulos */
 function generateMesh3dObject(triangles,solid,color){
 	var geometry = new THREE.Geometry();
-	//var Material=new THREE.MeshLambertMaterial({color:colorTrazo,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: false});
+	//var Material=new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: false});
 	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid});
 	
 	var vertices = [];
@@ -204,9 +204,11 @@ function generateMesh3dObject(triangles,solid,color){
 			console.info(" Error al encontrar key");
 			return
 		}
+
 		var i0 = mapVertex.get(key0).indexValue;
 		var i1 = mapVertex.get(key1).indexValue;
 		var i2 = mapVertex.get(key2).indexValue;
+		/* A favor de las manecillas del reloj por defecto se encuentran los triangulos ordenados de esta manera */
 		geometry.faces.push(new THREE.Face3(i0, i1, i2));
 
 		/* Negative */
@@ -220,7 +222,8 @@ function generateMesh3dObject(triangles,solid,color){
 		var i0 = mapVertex.get(key0).indexValue;
 		var i1 = mapVertex.get(key1).indexValue;
 		var i2 = mapVertex.get(key2).indexValue;
-		geometry.faces.push(new THREE.Face3(i0, i1, i2));
+		/* En contra de las manecillas del reloj */
+		geometry.faces.push(new THREE.Face3(i0, i2, i1));
 	});
 
 	geometry.computeFaceNormals();
