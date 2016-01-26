@@ -148,8 +148,8 @@ function newTriangleSolidWebGl(triangle){
 /* Genera el mesh dado una lista de triangulos */
 function generateMesh3dObject(triangles,solid,color){
 	var geometry = new THREE.Geometry();
-	//var Material=new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: false});
-	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid});
+	//var Material=new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: solid});
+	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid,/*shading:THREE.FlatShading*/});
 	
 	var vertices = [];
 	var mapVertex = new Map();
@@ -230,7 +230,7 @@ function generateMesh3dObject(triangles,solid,color){
 	geometry.computeVertexNormals();
 	
 	var triangleWebGlZpositive = new THREE.Mesh(geometry,Material);
-
+	//console.info(" triangulos orginales ",triangles.length,geometry.faces.length/2)
 	return triangleWebGlZpositive;
 }
 

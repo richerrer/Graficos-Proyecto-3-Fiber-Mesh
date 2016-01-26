@@ -206,7 +206,7 @@
 			/* Genero el objeto en 3d */
 			if(MODE.SKETCH){
 				removeObject(stroke,escena);
-				get3dObject(puntos,parseInt(stroke.length*0.2)/*30*/,8);
+				get3dObject(puntos,parseInt(stroke.length*0.2)/*30*/,20);
 				
 			}
 			
@@ -237,8 +237,9 @@
 			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
 				
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
-			object3DSolid.push(draw3dObject(object3D,escena2,true,"rgb(255,255,255)"));
-
+			//object3DSolid = drawTriangles(object3DSolid,escena2,true);
+			//console.info(object3D.length)
+			object3DSolid.push(draw3dObject(object3D,escena2,false,"rgb(255,255,255)"));
 			//MODE.ROTATION = true;MODE.SKETCH = false;
 		}
 
