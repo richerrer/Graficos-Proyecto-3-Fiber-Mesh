@@ -207,7 +207,8 @@ function getZvalue(v1,v2,rise,sample,canvas_context){
 	if(vertexPoints.length == distances.length){
 		for(var i = 0; i < distances.length; i++){
 			var value = distances[i];
-			var z = rise*(Math.sqrt(1-(value/distance))); //Ecuacion de la elipse
+			var z = distance*(Math.sqrt(1-(value/rise))); //Ecuacion de la elipse
+			console.info("cambio")
 			vertexPoints[i].Z = z;//Asigno el valor de Z
 
 			//canvas_context.strokeStyle = "rgb(0,0,0)";

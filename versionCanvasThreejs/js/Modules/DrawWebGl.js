@@ -1,10 +1,17 @@
 
 /* Dibuja la linea del sketch generado por el usuario, y lo agrega a una lista 
 */
-function drawStrokeLine(point1,point2,list,scene){
+function drawStrokeLineWith2points(point1,point2,list,scene){
 	var lineWebGl = newLineWebGlWith2points(point1,point2);	
 	list.push(lineWebGl);
 	scene.add(lineWebGl);
+}
+
+function drawStrokeLine(points,scene){
+	var lineWebGl = newLineWebGl(points);	
+	//list.push(lineWebGl);
+	scene.add(lineWebGl);
+	return lineWebGl;
 }
 
 /* Dibuja y retorna el objeto web gl creado */
@@ -52,10 +59,35 @@ function draw3dObject(listTriangles,scene,solid,color){
 
 /* Crea una linea con 2 puntos 
 */
+function newLineWebGl(vertices){
+
+	// agregamos un material para que el punto tenga color
+	var Material=new THREE.PointsMaterial({color:0XFF0000,size:5});
+
+	var geometry = new THREE.Geometry();
+
+	//var vertices=points;
+	var long_vertices=vertices.length;
+
+	for(i=0;i<long_vertices;i++){
+		x=vertices[i][0];
+		y=vertices[i][1];
+		z=vertices[i][2];
+		Vector=new THREE.Vector3(x,y,z);
+		geometry.vertices.push(Vector);   
+	}
+	
+	var line = new THREE.Line(geometry,Material);
+	//console.info("update",geometry.verticesNeedUpdate,geometry)	
+	return line;
+}
+
+/* Crea una linea con 2 puntos 
+*/
 function newLineWebGlWith2points(point1,point2){
 
 	// agregamos un material para que el punto tenga color
-	var Material=new THREE.PointsMaterial({color:0XFF0000});
+	var Material=new THREE.PointsMaterial({color:0XFF0000,size:5});
 
 	var geometry = new THREE.Geometry();
 	var vertices=[point1,point2];

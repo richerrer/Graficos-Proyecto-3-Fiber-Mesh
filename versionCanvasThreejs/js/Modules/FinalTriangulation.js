@@ -12,7 +12,7 @@ function finalTriangulation(plano,spine){
 			var vertex = spine.vertex[i];
 			var planeEdges = spine.planeEdges[i];
 
-			//newTfromJTriangle2EdgeRemove(edges,vertex,planeEdges,plano);
+			newTfromJTriangle2EdgeRemove(edges,vertex,planeEdges,plano);
 		}
 
 		/* La espina es resultado de un triangulo J si 1 arista fue eliminada si :

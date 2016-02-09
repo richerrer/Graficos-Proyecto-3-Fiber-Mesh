@@ -2,7 +2,7 @@
 * a muestrear para cada vertice del triangulo.
 */
 function generate3dObject(spine,triangles,samples){
-
+	
 	/* Conjunto de triangulos resultantes que forman el objetos*/
 	var object3D = [];
 
@@ -13,9 +13,9 @@ function generate3dObject(spine,triangles,samples){
 	var nTriangles = manageTriangles(spineVertex,triangles);
 
 	/* Mapa con los vertices de cada edge junto con su elevacion*/
-	var spineHeight = getDistanceForSpineVertex2(spineVertex,triangles);
+	//var spineHeight = getDistanceForSpineVertex2(spineVertex,triangles);
 	var spineHeight = getDistanceForSpineVertex(spineVertex,nTriangles);
-	
+	//console.info("altura",spineHeight)
 	for(var i = 0; i< nTriangles.length;i++){
 		var t = nTriangles[i];
 		var v1 = t.vTriangle[0];
@@ -285,7 +285,7 @@ function getZvalueInTriangle(v1,v2,v3,heigh,type,samples){
 /* Se procede a realizar la elevacion para todos los puntos conformados por 2 vertices, para ello se le da la elevacion correspondiente dada por rise
  * v1 es el vertice donde el valor de Z es es mayor mientras que v2 donde es 0.
 */
-function getZvalue(v1,v2,rise,sample){
+/*function getZvalue(v1,v2,rise,sample){
 	
 	var points = resamplePoints(v1,v2,sample);
 	var vertexPoints = points.resamplePointsVector;//Contiene los puntos del vertice
@@ -301,11 +301,11 @@ function getZvalue(v1,v2,rise,sample){
 			var z = rise*(Math.sqrt(1-(value/distance))); //Ecuacion de la elipse
 			//var z = b*(Math.sqrt(1-((value*value)/(a*a)))); //Ecuacion de la elipse
 			vertexPoints[i].Z = z;//Asigno el valor de Z
-			//console.info(z);
+			console.info("rise:",rise,"distance",distance);
 		}	
 	}
 	return vertexPoints;
-}
+}*/
 
 function getZvalue2(v1,v2,rise,sample){
 	
@@ -322,6 +322,7 @@ function getZvalue2(v1,v2,rise,sample){
 			var z = b*(Math.sqrt(1-((L*L)/(a*a)))); //Ecuacion de la elipse
 			//var z = b*(Math.sqrt(1-((value*value)/(a*a)))); //Ecuacion de la elipse
 			vertexPoints[i].Z = z;//Asigno el valor de Z
+			//console.info("rises:",b,"distances",a);
 			//console.info(z);
 		}	
 	}

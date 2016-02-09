@@ -13,31 +13,38 @@
 	<script type="text/javascript" src="js/Modules/3dGeneration.js"></script>
 	<script type="text/javascript" src="js/Modules/FinalTriangulation.js"></script>
 	<script type="text/javascript" src="js/Modules/DrawWebGl.js"></script>
+	<script type="text/javascript" src="js/Modules/Extrussion.js"></script>
 	<script type="text/javascript"> 
 		var escena,escena2;
 		var camara,camara2;
 		var render,render2;
 		var value = 0.01;
-		var canvasRect = {x: 19, y: 25, width: 800, height: 400};//var canvasRect = {x: 19, y: 138, width: 800, height: 400};
-		var canvasWidth = 800;
-		var canvasHeight = 400;
+		var canvasRect = {x: 19, y: 25, width: 1450, height: 400};//var canvasRect = {x: 19, y: 138, width: 800, height: 400};
+		var canvasWidth = 1480;
+		var canvasHeight = 600;
 		var value2 = 10;
 		var lastTime;
+		var raycaster;
 		
+		var baseRingFlag = false;
 		var TECLA = { ARRIBA:false, ABAJO:false, IZQUIERDA:false, DERECHA:false};
 
 		/* Modo de interaccion del usuario con el mouse*/
-		var MODE = { SKETCH:true, ROTATION:false };
+		var MODE = { SKETCH:true, ROTATION:false,EXTRUSION:false };
 		/*var triangle;
 		var triangulo;
 		var cube;*/
 		/**/
 		var geometry;
 		var linea;
-		var puntos;
+		var puntos,baseRing=[],extrussionStroke=[],vax=0,spotLight2 ;
 		//var spotLight;
 		/* Contiene todas los objetos lineas para la graficacion en opengl del trazo generado por el usuario */
 		var stroke = [];
+		/* Contiene el objeto linea perteneciente al baseRing */
+		var baseRingStroke;
+		/* Contiene la normal y centro del stroke*/
+		var baseRingNormalAndCenter;
 		/* Objeto poligono grafico webGl*/
 		var polygonWebGLResample;
 		/* Lista de triangulos webgl del plano basico*/
@@ -73,28 +80,30 @@
 			document.getElementById("myCanvas").appendChild(render.domElement);		
 
 			render2 = new THREE.WebGLRenderer();
-			render2.setClearColor(0xECF8FA, 1);
+			render2.setClearColor(0x000000, 1);
 			render2.setSize(canvasWidth, canvasHeight);
 			document.getElementById("myCanvas2").appendChild(render2.domElement);		
 			initScene();  
+			raycaster = new THREE.Raycaster();
 		}
 
 		function initScene()
 		{	
 			
 			var spotLight = new THREE.SpotLight( 0xFFFFFF );
-			var spotLight2 = new THREE.SpotLight( 0xFFFFFF );
+			spotLight2 = new THREE.SpotLight( 0xFFFFFF );
 			spotLight.position.set( 0,0,800);
-			spotLight2.position.set(100,500,400);
+			spotLight2.position.set(100,100,800);
 			var luzAmbiente = new THREE.AmbientLight(0xff4fff);	
 			//wspotLight.castShadow = true;
 			escena = new THREE.Scene();
-			var axis = new THREE.AxisHelper(500);
+			var axis = new THREE.AxisHelper(500);//500
 			escena.add(axis);
 			escena.add( spotLight );
+			
 			escena.add(luzAmbiente);
 			camara = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
-			camara.position.set(0, 0, 500);
+			camara.position.set(0, 0, canvasHeight+100);
 			camara.lookAt(escena.position);
 			escena.add(camara);
 
@@ -103,12 +112,13 @@
 			escena2.add(axis2);
 			escena2.add( spotLight );
 			//escena2.add( spotLight2 );
+			//escena2.add( spotLight2 );
 			//escena2.add(luzAmbiente);
 			//escena.add(luzAmbiente);
 			//escena.add( luzDireccional );
 			camara2= new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
 			//camara.position.set(200, 200, 500);
-			camara2.position.set(0, 0, 500);
+			camara2.position.set(0, 0, canvasHeight+100);
 			camara2.lookAt(escena.position);
 			escena2.add(camara2);
 
@@ -163,6 +173,37 @@
 				puntos.length = 1; 
 				puntos[0] = new Point(x, y);
 			}
+
+			/* Modo EXTRUSSION*/
+			else  if (MODE.EXTRUSSION){
+
+				/* Create the base ring */
+				if(!baseRingFlag){
+					x = (e.clientX / canvasWidth) * 2 - 1;
+		  			y = -(e.clientY / canvasHeight) * 2 + 1;
+					//console.info("",x,y)
+					var vector = new THREE.Vector3(x, y, 1);
+		  			vector.unproject(camara2);
+		  			raycaster.set(camara2.position, vector.sub(camara2.position ).normalize());
+		  			var intersects = raycaster.intersectObjects(object3DSolid);
+		 			if(intersects.length>0){
+		 				//console.info("point",intersects[ 0 ].point);
+		 				var point = intersects[ 0 ].point;
+		 				baseRing.length = 1; 
+						baseRing[0] = point;
+		 			}
+
+		 			/*for ( var i = 0; i < intersects.length; i++ ) {
+						intersects[ 1 ].object.material.color.set( 0xff0000 );
+					}*/
+				}
+
+				/* Create the extrussion stroke*/
+				else{
+					extrussionStroke.length = 1; 
+					extrussionStroke[0] = new Point(x, y);
+				}
+			}
 		}
 
 		function mouseMoveEvent(e)
@@ -183,8 +224,11 @@
 			/* Modo SKETCH */
 			if(MODE.SKETCH){
 				puntos.push(new Point(x, y));
-				drawStroke(puntos.length - 2, puntos.length - 1);
+				var pFrom = puntos[puntos.length - 2];
+				var pTo = puntos[puntos.length - 1];
+				drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena);
 			}
+
 
 			/* Modo ROTATION */
 			else if(MODE.ROTATION){
@@ -194,6 +238,32 @@
 	            rotate3dObject(object3DSolid,deltaRotationQuaternion);
 			}
 			
+			/* Modo EXTRUSSION*/
+			else if (MODE.EXTRUSSION){
+
+				if(!baseRingFlag){
+					x = (e.clientX / canvasWidth) * 2 - 1;
+		  			y = -(e.clientY / canvasHeight) * 2 + 1;
+					var vector = new THREE.Vector3(x, y, 1);
+		  			vector.unproject(camara2);
+		  			raycaster.set(camara2.position, vector.sub(camara2.position ).normalize());
+		  			var intersects = raycaster.intersectObjects(object3DSolid);
+		 			if(intersects.length>0){
+		 				var point = intersects[ 0 ].point;
+						baseRing.push(point);
+						var pFrom = baseRing[baseRing.length - 2];
+						var pTo = baseRing[baseRing.length - 1];
+						drawStrokeLineWith2points([pFrom.x,pFrom.y,pFrom.z],[pTo.x,pTo.y,pTo.z],stroke,escena2);
+		 			}
+		 		}
+
+		 		else{
+		 			extrussionStroke.push(new Point(x, y));
+					var pFrom = extrussionStroke[extrussionStroke.length - 2];
+					var pTo = extrussionStroke[extrussionStroke.length - 1];
+					drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena2);
+		 		}
+			}
 			
 		}
 
@@ -206,8 +276,57 @@
 			/* Genero el objeto en 3d */
 			if(MODE.SKETCH){
 				removeObject(stroke,escena);
-				get3dObject(puntos,parseInt(stroke.length*0.2)/*30*/,20);
-				
+				get3dObject(puntos,/*parseInt(puntos.length*0.2)*/30,4);
+
+				var resamplePoints = Resample(puntos,5);
+				console.info(" puntos ",puntos.length);
+				console.info(" puntos remuestreados ",resamplePoints.length);
+
+				for(var i = 1 ; i < resamplePoints.length; i++){
+					var pFrom = resamplePoints[i-1];
+					var pTo = resamplePoints[i];
+					drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena);
+				}
+				getLines(resamplePoints);
+				puntos = []
+			}
+			else if(MODE.EXTRUSSION){
+				if(!baseRingFlag){
+					baseRing.push(baseRing[0]);
+					/* Obtengo la normal*/
+					baseRingNormalAndCenter = getNormalAndGravityCenter(baseRing,stroke);
+					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
+					removeObject(stroke,escena2);
+					var baseRingPoints = baseRing.map(function(point){
+						return [point.x,point.y,point.z];
+					});
+					baseRingStroke = drawStrokeLine(baseRingPoints,escena2);
+					baseRingFlag = true;
+				}
+				else{
+
+					var newextrussionStroke = extrussionStroke.map(function(point){
+						return [point.X,point.Y,0];
+					});
+					/* Obtengo la normal y centro  aplicada la matriz de rotacion con que se rota el stroke */
+					baseRingNormalAndCenter = applyTransformToNormalAndCenter(baseRingStroke,baseRingNormalAndCenter);
+					var p2 = baseRingNormalAndCenter.normal;
+					var p1 = baseRingNormalAndCenter.gravityCenter;
+					//drawStrokeLineWith2points(p1,[p2[0] + p1[0],p2[1]+ p1[1],p2[2]+ p1[2]],stroke,escena2);
+					var point = [baseRing[0].x,baseRing[0].y,baseRing[0].z];
+					/* Obtengo el punto rotado */
+					point = applyTransform(baseRingStroke,point);
+
+					var vector = [point[0]-p1[0],point[1]-p1[1],point[2]-p1[2]];
+					//drawStrokeLineWith2points(p1,[vector[0]+p1[0],vector[1]+p1[1],vector[2]+p1[2]],stroke,escena2);
+					
+					//baseRing = getVerticesObject(baseRingStroke);
+					var projectedExtrussion = extrussion(baseRingNormalAndCenter.normal,baseRingNormalAndCenter.gravityCenter,vector,newextrussionStroke,stroke);
+					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
+					//removeObject(stroke,escena2);
+					console.info("projected",projectedExtrussion)
+					stroke.push(drawStrokeLine(projectedExtrussion,escena2));
+				}
 			}
 			
 		}
@@ -239,7 +358,7 @@
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
 			//object3DSolid = drawTriangles(object3DSolid,escena2,true);
 			//console.info(object3D.length)
-			object3DSolid.push(draw3dObject(object3D,escena2,false,"rgb(255,255,255)"));
+			object3DSolid.push(draw3dObject(object3D,escena2,true,"rgb(255,255,255)"));
 			//MODE.ROTATION = true;MODE.SKETCH = false;
 		}
 
@@ -289,20 +408,28 @@
 			return scrollY;
 		}
 
-		function drawStroke(from, to)
+		/*function drawStroke(from, to,puntos)
 		{	
 			var p1 = [puntos[from].X, puntos[from].Y,0];
 			var p2 = [puntos[to].X, puntos[to].Y,0];
 			drawStrokeLine(p1,p2,stroke,escena);
-			renderEscena();
+			//srenderEscena();
 		}
-
+		function drawStroke2(from, to,puntos)
+		{	
+			var p1 = [puntos[from].x, puntos[from].y,puntos[from].z];
+			var p2 = [puntos[to].x, puntos[to].y,puntos[to].z];
+			//console.info(p1,p2)
+			drawStrokeLine(p1,p2,stroke,escena2);
+			//renderEscena2();
+		}*/
 		function animarEscena()
 		{
 
 			var tiempo = (Date.now() - lastTime)/1000;//Divido porque esta en miliseg y lo quiero en segundos
 			if(tiempo > 0){
-				
+				//vax = vax+10;
+				//spotLight2.position.set(0,vax,800);
 				renderEscena();
 				renderEscena2();
 			}
@@ -328,10 +455,13 @@
 		            TECLA.ABAJO=true;
 		            break;
 		        case 82://R modo Rotation
-		        	MODE = { SKETCH:false, ROTATION:true };
+		        	MODE = { SKETCH:false, ROTATION:true,EXTRUSSION:false  };
 		       	 	break;
 		       	case 84://T modo Sketch
-		        	MODE = { SKETCH:true, ROTATION:false };
+		        	MODE = { SKETCH:true, ROTATION:false,EXTRUSSION:false  };
+		       	 	break;
+		       	case 69://T modo Sketch
+		        	MODE = { SKETCH:false, ROTATION:false,EXTRUSSION:true };
 		       	 	break;
 
 		    }
@@ -369,8 +499,81 @@
 			else{
 				object3DSolid.quaternion.multiplyQuaternions(deltaRotationQuaternion, object3DSolid.quaternion);
 			}
+
+			stroke.forEach(function(object){
+					object.quaternion.multiplyQuaternions(deltaRotationQuaternion, object.quaternion);
+			});
+
+			if(baseRingStroke!=null){
+
+				baseRingStroke.quaternion.multiplyQuaternions(deltaRotationQuaternion, baseRingStroke.quaternion);
+				//applyTransformToItsGeometry(baseRingStroke);
+				//console.info(baseRingStroke.geometry.vertices[0]);
+			}
 		}
 
+		/* Give it an object, apply its transformation to its geometry */
+		function applyTransformToItsGeometry(object){
+			/* Object has its own matrix that contains its position, quaternion, rotation and scale 		values,when we call updateMatrix we set the matrix with this values
+			*/
+
+			object.updateMatrix();
+
+			/* Apply the matrix to the geometry object */
+			//object.geometry.applyMatrix(object.matrix);
+			var b = new THREE.Vector3( baseRingNormal[0], baseRingNormal[1], baseRingNormal[2] );
+			//console.info("yes",b)
+			b.applyMatrix4(object.matrix);
+			console.info("yes",b)
+			/* Then we restore the values to the object */
+			object.position.set(0,0,0);
+			object.rotation.set(0,0,0);
+			object.scale.set(1,1,1);
+
+			object.updateMatrix();
+
+			drawStrokeLineWith2points([b.x,b.y,b.z],[0,0,0],stroke,escena2);
+		}
+
+
+		function applyTransformToNormalAndCenter(object,normalAndCenter){
+			/* Object has its own matrix that contains its position, quaternion, rotation and scale 		values,when we call updateMatrix we set the matrix with this values
+			*/
+			var normal = normalAndCenter.normal;
+			var center = normalAndCenter.gravityCenter;
+
+			object.updateMatrix();
+
+			/* Apply the matrix to the geometry object */
+			var normalVector = new THREE.Vector3( normal[0], normal[1], normal[2] );
+			var centerVector = new THREE.Vector3( center[0], center[1], center[2] );
+			normalVector.applyMatrix4(object.matrix);
+			centerVector.applyMatrix4(object.matrix);
+
+			object.updateMatrix();
+
+			normalAndCenter.normal = [normalVector.x,normalVector.y,normalVector.z];
+			normalAndCenter.gravityCenter = [centerVector.x,centerVector.y,centerVector.z];
+			return normalAndCenter;
+			//console.info(normalAndCenter.normal,normalAndCenter.gravityCenter)
+			//return [b.x,b.y,b.z];
+		}
+
+		function applyTransform(object,vector){
+			object.updateMatrix();
+			var vectorNew = new THREE.Vector3( vector[0], vector[1], vector[2] );
+			vectorNew.applyMatrix4(object.matrix);
+			object.updateMatrix();
+
+			vector = [vectorNew.x,vectorNew.y,vectorNew.z];
+			return vector;
+		}
+
+		/* Get the vertices geometry from an object*/
+		function getVerticesObject(object){
+			console.info(object.geometry.vertices);
+			return object.geometry.vertices;
+		}
 		/* Obtiene las coordnadas referentes al render, recibiendo el evento touch*/
 		function getCoordinatesToRender(event)
 		{
@@ -395,15 +598,25 @@
 </head>
 
 <body onload="webGLStart()">
-<header>
+<!--<header>
 	<!--<h1 style="color: blue;">Proyecto#2 Graficos Por Computadora II - ESPOL 2015-II</h1>
 	<h2 style=";margin-left: 120px;">Grupo#6 Raul Mira / Ricardo Maya / Jose Monar </h2>-->
-</header
+<!--</header>-->
 <!-- Gesture image and canvas -->
-<table border="0" width="100%" cellspacing="10">
+<table border="0" width="100%" cellspacing="0">
 	<tr>
 		<td valign="top" width="50%">
-			<div id="myCanvas" width=800 height=400 style="background-color:#ECF8FA; border:3px solid #000000;"
+			<div id="myCanvas2" style="background-color:#ECF8FA; border:3px solid #000000;"
+					onmousedown="mouseDownEvent(event)"
+					onmousemove="mouseMoveEvent(event)"
+					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
+					oncontextmenu="return false;">
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td valign="top" width="50%">
+			<div id="myCanvas" style="background-color:#ECF8FA; border:3px solid #000000;"
 					onmousedown="mouseDownEvent(event)"
 					onmousemove="mouseMoveEvent(event)"
 					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
@@ -412,7 +625,7 @@
 		</td>
 
 		
-		<td valign="top" width="100%">
+		<!--<td valign="top" width="100%">
 			<h2>Colores Representativos </h2>
 			<h2 style="color: red;">Cabeza = rojo </h2>
 			<h2 style="color: blue;">Cuerpo = azul </h2>
@@ -437,18 +650,9 @@
 					onclick="buttonOnClick()"
 				>Limpiar</button>
 			
-		</td>
+		</td>-->
 	</tr>
-	<tr>
-		<td valign="top" width="50%">
-			<div id="myCanvas2" width=800 height=400 style="background-color:#ECF8FA; border:3px solid #000000;"
-					onmousedown="mouseDownEvent(event)"
-					onmousemove="mouseMoveEvent(event)"
-					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
-					oncontextmenu="return false;">
-			</div>
-		</td>
-	</tr>
+	
 </table>
 </body>
 </html>
