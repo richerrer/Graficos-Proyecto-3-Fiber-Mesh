@@ -10,11 +10,11 @@
 	return projectedPoints;
 }*/
 
-function extrussion(baseRingNormal,gravityCenter,vector,extrussionStroke,stroke){
+function extrussion(baseRingNormal,gravityCenter,vector,cameraPoint,extrussionStroke,stroke){
 	
-	var projectedPoints = getProjectionPoints(extrussionStroke,baseRingNormal,gravityCenter,vector,stroke);
+	var projectedPoints = getProjectionPoints(extrussionStroke,baseRingNormal,gravityCenter,vector,cameraPoint,stroke);
 
-	console.info(projectedPoints)
+	//console.info(projectedPoints)
 	return projectedPoints;
 }
 
@@ -42,14 +42,13 @@ function getNormalAndGravityCenter(baseRing,stroke){
 
 	var p1 = [cX/baseRing.length,cY/baseRing.length,cZ/baseRing.length];
 	var p2 = [Ayz,Azx,Axy];
-	//drawStrokeLineWith2points(p1,[p2[0] + p1[0],p2[1]+ p1[1],p2[2]+ p1[2]],stroke,escena2);
 	var v1 = new THREE.Vector3( baseRing[0].x - p1[0], baseRing[0].y-p1[1], baseRing[0].z-p1[2] );
 	var v2 = new THREE.Vector3( baseRing[1].x - p1[0], baseRing[1].y-p1[1], baseRing[1].z-p1[2] );
 	var v3 = new THREE.Vector3();
 
 	v3.crossVectors( v2, v1 );
-	p2 = [20*v3.x,20*v3.y,20*v3.z];
-	drawStrokeLineWith2points(p1,[p2[0] + p1[0],p2[1]+ p1[1],p2[2]+ p1[2]],stroke,escena2);
+	p2 = [v3.x,v3.y,v3.z];
+	//drawStrokeLineWith2points(p1,[p2[0] + p1[0],p2[1]+ p1[1],p2[2]+ p1[2]],stroke,escena2);
 	//renderEscena2();
 
 	return {normal:p2,gravityCenter:p1};
@@ -58,29 +57,24 @@ function getNormalAndGravityCenter(baseRing,stroke){
 /* Get the projected points of the extrussion extroke to a plane with normal and point give it 
    by the parameters
 */
-function getProjectionPoints(extrussionStroke,normal,gravityPoint,vector,stroke){
+function getProjectionPoints(extrussionStroke,normal,gravityPoint,vector,cameraPoint,stroke){
 
 	//var planeEcuation = getPlaneValuesWithNormal(normal,gravityPoint);
-	vector = [vector[0]*20,vector[1]*20,vector[2]*20]
-	var p1 = gravityPoint;
-	var p2 = [normal[0] + p1[0],normal[1]+ p1[1],normal[2]+ p1[2]];
-	var p3 = [vector[0] + p1[0],vector[1]+ p1[1],vector[2]+ p1[2]];
+	//vector = [vector[0]*20,vector[1]*20,vector[2]*20]
+	//var p1 = gravityPoint;
+	//var p2 = [normal[0] + p1[0],normal[1]+ p1[1],normal[2]+ p1[2]];
+	//var p3 = [vector[0] + p1[0],vector[1]+ p1[1],vector[2]+ p1[2]];
 
-	drawStrokeLineWith2points(p1,p2,stroke,escena2);
-	drawStrokeLineWith2points(p1,p3,stroke,escena2);
+	//drawStrokeLineWith2points(p1,p2,stroke,escena2);
+	//drawStrokeLineWith2points(p1,p3,stroke,escena2);
 	var planeEcuation = getPlaneValues(gravityPoint,normal,vector);
 	
-	
-	var p2 = [planeEcuation.A,planeEcuation.B,planeEcuation.C];
-	//drawStrokeLineWith2points(p1,[p2[0] + p1[0],p2[1]+ p1[1],p2[2]+ p1[2]],stroke,escena2);
-	//extrussionStroke = [[200,500,80]];
+	//var p2 = [planeEcuation.A,planeEcuation.B,planeEcuation.C];
+
 	var projectedPoints = extrussionStroke.map(function(point){
-		var newPoint = getProjectPoint(planeEcuation,point);
-		//console.info("old point ",point,"new point",newPoint);
+		var newPoint = getProjectPoint(planeEcuation,point,cameraPoint);
 		return newPoint;
 	});
-	//console.info("ecuacion plano",planeEcuation)
-	//console.info("punto old",extrussionStroke,"new point",projectedPoints)
 	return projectedPoints;
 }
 
@@ -96,19 +90,19 @@ function getPlaneValues(point,u,v){
 	//u = [2,1,1];
 	//v = [-1,2,0];
 	//point = [1,1,1];
-	console.info(u,v);
+	//console.info(u,v);
 	var a = u[1]*v[2] - v[1]*u[2];
 	var b = u[0]*v[2] - v[0]*u[2];
 	var c = u[0]*v[1] - v[0]*u[1];
 	var d = -a*point[0] + b*point[1] - c*point[2];
 
 	var plane = {A:a,B:-b,C:c,D:d};
-	console.info(plane);
+	//console.info(plane);
 	return plane;
 }
 
 /* Get the plane values Ax + By + Cz = D, give it the normal and one point*/
-function getPlaneValuesWithNormal(normal,point){
+/*function getPlaneValuesWithNormal(normal,point){
 
 	var A = normal[0];
 	var B = normal[1];
@@ -116,10 +110,10 @@ function getPlaneValuesWithNormal(normal,point){
 	var D = normal[0]*(-point[0]) + normal[1]*(-point[1]) +normal[2]*(-point[2]);
 
 	return {A:A,B:B,C:C,D:D};
-}
+}*/
 
 /* Project one point to the plane */
-function getProjectPoint(planeEcuation,point){
+/*function getProjectPoint(planeEcuation,point){
 	var tParameter = getTparameter(planeEcuation,point);
 	//console.info("t parameter",tParameter);
 	var x = point[0]+(tParameter* planeEcuation.A);
@@ -128,10 +122,24 @@ function getProjectPoint(planeEcuation,point){
 
 	var projectedPoint = [x,y,z];
 	return projectedPoint;
+}*/
+
+/* Project one point to the plane give it the camera point */
+function getProjectPoint(planeEcuation,point,cameraPoint){
+	/* Get the vector */
+	var vector = [point[0]-cameraPoint[0],point[1]-cameraPoint[1],point[2]-cameraPoint[2]];
+	var tParameter = getTparameter(planeEcuation,point,vector);
+	//console.info("t parameter",tParameter);
+	var x = point[0]+(tParameter* vector[0]);
+	var y = point[1]+(tParameter* vector[1]);
+	var z = point[2]+(tParameter* vector[2]);
+
+	var projectedPoint = [x,y,z];
+	return projectedPoint;
 }
 
-/* Get t parameter to intersect the rect with the plane, point is the point we want project */
-function getTparameter(planeEcuation,point){
+/* Get t parameter to intersect the rect with the plane, point is the point we want to project */
+/*function getTparameter(planeEcuation,point){
 
 	var Aplane = planeEcuation.A;
 	var Bplane = planeEcuation.B;
@@ -144,8 +152,33 @@ function getTparameter(planeEcuation,point){
 
 	/*console.info("plane",Aplane,Bplane,Cplane,Dplane)
 	console.info("normal",Anormal,Bnormal,Cnormal)
-	console.info("punto ",Apoint,Bpoint,Cpoint)*/
+	console.info("punto ",Apoint,Bpoint,Cpoint)
 	var t = -(Aplane*Apoint + Bplane*Bpoint + Cplane*Cpoint + Dplane) / ( Aplane*Aplane +Bplane*Bplane +Cplane*Cplane );  
+	
+	return t;
+}*/
+
+/* Get t parameter to intersect the rect with the plane, point is the point we want to project */
+function getTparameter(planeEcuation,point,vector){
+
+	//var vector = [point[0]-cameraPoint[0],point[1]-cameraPoint[1],point[2]-cameraPoint[2]];
+	var Aplane = planeEcuation.A;
+	var Bplane = planeEcuation.B;
+	var Cplane = planeEcuation.C;
+	var Dplane = planeEcuation.D;
+
+	var Apoint = point[0];
+	var Bpoint = point[1];
+	var Cpoint = point[2];
+
+	var Ax = vector[0];
+	var By = vector[1];
+	var Cz = vector[2];
+
+	/*console.info("plane",Aplane,Bplane,Cplane,Dplane)
+	console.info("normal",Anormal,Bnormal,Cnormal)
+	console.info("punto ",Apoint,Bpoint,Cpoint)*/
+	var t = -(Aplane*Apoint + Bplane*Bpoint + Cplane*Cpoint + Dplane) / ( Aplane*Ax +Bplane*By +Cplane*Cz );  
 	
 	return t;
 }

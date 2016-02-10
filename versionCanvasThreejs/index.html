@@ -293,37 +293,51 @@
 			else if(MODE.EXTRUSSION){
 				if(!baseRingFlag){
 					baseRing.push(baseRing[0]);
+
 					/* Obtengo la normal*/
 					baseRingNormalAndCenter = getNormalAndGravityCenter(baseRing,stroke);
-					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
+					
+					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego en un objeto linea */
 					removeObject(stroke,escena2);
+
+					/* Modifico la manera de representar los puntos */
 					var baseRingPoints = baseRing.map(function(point){
 						return [point.x,point.y,point.z];
 					});
+
+					/* Dibujo el stroke en un objeto linea */
 					baseRingStroke = drawStrokeLine(baseRingPoints,escena2);
+
+					/* Cambio el estado de la bandera */
 					baseRingFlag = true;
 				}
 				else{
 
+					/* Modifico la manera de representar los puntos */
 					var newextrussionStroke = extrussionStroke.map(function(point){
 						return [point.X,point.Y,0];
 					});
-					/* Obtengo la normal y centro  aplicada la matriz de rotacion con que se rota el stroke */
+
+					/* Obtengo la normal y centro  aplicada la matriz de rotacion con que se roto el stroke */
 					baseRingNormalAndCenter = applyTransformToNormalAndCenter(baseRingStroke,baseRingNormalAndCenter);
-					var p2 = baseRingNormalAndCenter.normal;
-					var p1 = baseRingNormalAndCenter.gravityCenter;
-					//drawStrokeLineWith2points(p1,[p2[0] + p1[0],p2[1]+ p1[1],p2[2]+ p1[2]],stroke,escena2);
+					var normal = baseRingNormalAndCenter.normal;
+					var center = baseRingNormalAndCenter.gravityCenter;
+					
+					/* Obtengo un punto del stroke */
 					var point = [baseRing[0].x,baseRing[0].y,baseRing[0].z];
+					
 					/* Obtengo el punto rotado */
 					point = applyTransform(baseRingStroke,point);
 
-					var vector = [point[0]-p1[0],point[1]-p1[1],point[2]-p1[2]];
-					//drawStrokeLineWith2points(p1,[vector[0]+p1[0],vector[1]+p1[1],vector[2]+p1[2]],stroke,escena2);
+					/* Genero un vector al centro del base ring */
+					var vector = [point[0]-center[0],point[1]-center[1],point[2]-center[2]];
 					
-					//baseRing = getVerticesObject(baseRingStroke);
-					var projectedExtrussion = extrussion(baseRingNormalAndCenter.normal,baseRingNormalAndCenter.gravityCenter,vector,newextrussionStroke,stroke);
+					/* Obtengo el nuevo stroke proyectado */
+					var projectedExtrussion = extrussion(normal,center,vector,[0, 0, canvasHeight+100],newextrussionStroke,stroke);
+
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
-					//removeObject(stroke,escena2);
+					removeObject(stroke,escena2);
+
 					console.info("projected",projectedExtrussion)
 					stroke.push(drawStrokeLine(projectedExtrussion,escena2));
 				}
