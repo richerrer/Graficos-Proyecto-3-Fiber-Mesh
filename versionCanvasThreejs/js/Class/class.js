@@ -294,7 +294,6 @@ function Triangle(v1,v2,v3,edges){
 	this.edges = edges;
 	this.type = this.setType();
 	this.vMidPoint = null;
-	this.reorderClockWiseVertex();
 }
 
 /* Reordena los puntos a favor de las manecillas del reloj */
@@ -310,6 +309,7 @@ Triangle.prototype.reorderClockWiseVertex = function(){
 		this.v2 = this.v3;
 		this.v3 = temp;
 	}
+
 
 }
 

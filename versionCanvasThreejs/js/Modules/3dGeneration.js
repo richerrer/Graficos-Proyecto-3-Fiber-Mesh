@@ -265,8 +265,8 @@ function getZvalueInTriangle(v1,v2,v3,heigh,type,samples){
 	{
 		rise1 = heigh.get(v1)/value;// La altura que va a crecer dado el vertice v1 que es el promedio a todos los vertices externos
 		rise2 = heigh.get(v2)/value;// La altura que va a crecer dado el vertice v2 que es el promedio a todos los vertices externos
-		sewEdgesPoints1 = getZvalue3(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
-		sewEdgesPoints2 = getZvalue3(v2,v3,rise2,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
+		sewEdgesPoints1 = getZvalue2(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
+		sewEdgesPoints2 = getZvalue2(v2,v3,rise2,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
 		finalTriangles = getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,1);
 	}
 
@@ -275,8 +275,8 @@ function getZvalueInTriangle(v1,v2,v3,heigh,type,samples){
 	{	
 		
 		rise1 = heigh.get(v1)/value;// La altura que va a crecer dado el vertice v1 que es el promedio a todos los vertices externos
-		sewEdgesPoints1 = getZvalue3(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
-		sewEdgesPoints2 = getZvalue3(v1,v2,rise1,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
+		sewEdgesPoints1 = getZvalue2(v1,v3,rise1,samples);//Son los puntos con la coordenada en z desde v1 a v3 despues de la costura
+		sewEdgesPoints2 = getZvalue2(v1,v2,rise1,samples);//Son los puntos con la coordenada en z desde v3 a v3 despues de la costura
 		finalTriangles = getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,0);
 	}
 	return finalTriangles;
@@ -402,7 +402,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 			e3 = new Edge(t2,t3,5);
 
 			triangle = new Triangle(t1,t3,t2,[e1,e2,e3]);
-			//triangle.reorderClockWiseVertex();
+			triangle.reorderClockWiseVertex();
 
 			finalTriangles.push(triangle);
 			/* Genera el segundo triangulo*/
@@ -415,7 +415,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 
 			
 			triangle = new Triangle(t1,t3,t2,[e1,e2,e3]);
-			//triangle.reorderClockWiseVertex();
+			triangle.reorderClockWiseVertex();
 			finalTriangles.push(triangle);
 			//triangle.draw3(canvas_context);
 			//console.info(triangle);
@@ -430,7 +430,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 		e3 = new Edge(t2,t3,5);
 
 		triangle = new Triangle(t1,t3,t2,[e1,e2,e3]);
-		//triangle.reorderClockWiseVertex();
+		triangle.reorderClockWiseVertex();
 		finalTriangles.push(triangle);
 		return finalTriangles;
 	}
@@ -446,6 +446,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 			e3 = new Edge(t2,t3,5);
 
 			triangle = new Triangle(t1,t2,t3,[e1,e2,e3]);
+			triangle.reorderClockWiseVertex();
 			finalTriangles.push(triangle);
 			
 			/* Genera el segundo triangulo*/
@@ -457,6 +458,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 			e3 = new Edge(t2,t3,5);
 
 			triangle = new Triangle(t1,t2,t3,[e1,e2,e3]);
+			triangle.reorderClockWiseVertex();
 			finalTriangles.push(triangle);
 			//triangle.draw3(canvas_context);
 			//console.info(triangle);
@@ -470,6 +472,7 @@ function getFinalTriangles(sewEdgesPoints1,sewEdgesPoints2,type){
 		e3 = new Edge(t2,t3,5);
 
 		triangle = new Triangle(t1,t2,t3,[e1,e2,e3]);
+		triangle.reorderClockWiseVertex();
 		finalTriangles.push(triangle);
 
 		return finalTriangles;

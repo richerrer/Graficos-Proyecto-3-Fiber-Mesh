@@ -266,6 +266,74 @@ function generateMesh3dObject(triangles,solid,color){
 	return triangleWebGlZpositive;
 }
 
+function generateMesh3dObject2(triangles,solid,color){
+	var geometry = new THREE.Geometry();
+	//var Material=new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: solid});
+	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid,/*shading:THREE.FlatShading*/});
+	
+	var vertices = [];
+	var mapVertex = new Map();
+
+	/* Genera el mapa de los vertices de un listado de triangulos 
+	 * key = valor entero del valor en x y z del vertice
+	 * value = indice del vertice que se usara como identificador , el objeto vertice y si el triangulo es tipo negativo o poitivo
+	 */
+	var generateMapVertex = function(triangles){
+		var map = new Map();
+		var indiceVertex = 0;
+		triangles.forEach(function(triangle,index,array){
+			[triangle.v1,triangle.v2,triangle.v3].forEach(function(vertex,index2,arrayVertex){
+				/* Positive */
+				var key = parseInt(vertex.X).toString()+parseInt(vertex.Y).toString()+parseInt(vertex.Z).toString();
+				if(!map.has(key)){
+					map.set(key,{indexValue:indiceVertex,vertex:vertex,negative:false});
+					indiceVertex++;
+				}
+			});
+		});
+		return map;
+	};
+	var mapVertex = generateMapVertex(triangles);
+	
+
+	/* Agrgeo los vertices a la geometria 
+	*/
+	mapVertex.forEach(function(value,key,map){
+		var vector;
+		//if(!value.negative) //Positivo
+		vector = new THREE.Vector3(value.vertex.X,value.vertex.Y,value.vertex.Z);
+		//else // Negativo
+			//vector = new THREE.Vector3(value.vertex.X,value.vertex.Y,-value.vertex.Z);
+		geometry.vertices.push(vector); 
+	});
+
+	/* Agrego las caras de los triangulos
+	*/
+	triangles.forEach(function(triangle,index,array){
+		/* Positive */
+		var key0 = parseInt(triangle.v1.X).toString()+parseInt(triangle.v1.Y).toString()+parseInt(triangle.v1.Z).toString();
+		var key1 = parseInt(triangle.v2.X).toString()+parseInt(triangle.v2.Y).toString()+parseInt(triangle.v2.Z).toString();
+		var key2 = parseInt(triangle.v3.X).toString()+parseInt(triangle.v3.Y).toString()+parseInt(triangle.v3.Z).toString();
+		if( ! (mapVertex.has(key0) && mapVertex.has(key1) && mapVertex.has(key2)) ){
+			console.info(" Error al encontrar key");
+			return
+		}
+
+		var i0 = mapVertex.get(key0).indexValue;
+		var i1 = mapVertex.get(key1).indexValue;
+		var i2 = mapVertex.get(key2).indexValue;
+		/* A favor de las manecillas del reloj por defecto se encuentran los triangulos ordenados de esta manera */
+		geometry.faces.push(new THREE.Face3(i2, i1, i0));
+	});
+
+	geometry.computeFaceNormals();
+	geometry.computeVertexNormals();
+	
+	var triangleWebGlZpositive = new THREE.Mesh(geometry,Material);
+	//console.info(" triangulos orginales ",triangles.length,geometry.faces.length/2)
+	return triangleWebGlZpositive;
+}
+
 
 
 function draw(obj,escena,render,object3D)

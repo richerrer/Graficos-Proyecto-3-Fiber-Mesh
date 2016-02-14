@@ -37,12 +37,12 @@
 		/**/
 		var geometry;
 		var linea;
-		var puntos,baseRing=[],extrussionStroke=[],vax=0,spotLight2 ;
+		var puntos,baseRing=[],baseRingPoints=[],extrussionStroke=[],vax=0,spotLight2 ;
 		//var spotLight;
 		/* Contiene todas los objetos lineas para la graficacion en opengl del trazo generado por el usuario */
 		var stroke = [];
 		/* Contiene el objeto linea perteneciente al baseRing */
-		var baseRingStroke;
+		var baseRingStroke;//,baseRingStroke2;
 		/* Contiene la normal y centro del stroke*/
 		var baseRingNormalAndCenter;
 		/* Objeto poligono grafico webGl*/
@@ -226,7 +226,7 @@
 				puntos.push(new Point(x, y));
 				var pFrom = puntos[puntos.length - 2];
 				var pTo = puntos[puntos.length - 1];
-				drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena);
+				drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena2);
 			}
 
 
@@ -261,7 +261,8 @@
 		 			extrussionStroke.push(new Point(x, y));
 					var pFrom = extrussionStroke[extrussionStroke.length - 2];
 					var pTo = extrussionStroke[extrussionStroke.length - 1];
-					drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena2);
+					//console.info(",",pFrom)
+					drawStrokeLineWith2points([pFrom.X,pFrom.Y,0],[pTo.X,pTo.Y,0],stroke,escena2);
 		 		}
 			}
 			
@@ -275,8 +276,8 @@
 
 			/* Genero el objeto en 3d */
 			if(MODE.SKETCH){
-				removeObject(stroke,escena);
-				get3dObject(puntos,/*parseInt(puntos.length*0.2)*/30,4);
+				//removeObject(stroke,escena2);
+				get3dObject(puntos,/*parseInt(puntos.length*0.2)*/40,4);
 
 				var resamplePoints = Resample(puntos,5);
 				console.info(" puntos ",puntos.length);
@@ -285,25 +286,54 @@
 				for(var i = 1 ; i < resamplePoints.length; i++){
 					var pFrom = resamplePoints[i-1];
 					var pTo = resamplePoints[i];
-					drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena);
+					//drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena2);
 				}
-				getLines(resamplePoints);
+				//getLines(resamplePoints);
 				puntos = []
 			}
 			else if(MODE.EXTRUSSION){
 				if(!baseRingFlag){
 					baseRing.push(baseRing[0]);
 
-					/* Obtengo la normal*/
-					baseRingNormalAndCenter = getNormalAndGravityCenter(baseRing,stroke);
-					
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego en un objeto linea */
 					removeObject(stroke,escena2);
 
 					/* Modifico la manera de representar los puntos */
-					var baseRingPoints = baseRing.map(function(point){
+					baseRingPoints = baseRing.map(function(point){
 						return [point.x,point.y,point.z];
 					});
+					var resampleRing = function(baseRing,resample){
+						var resamplePoints = [];
+						var points = baseRing.map(function(point){
+
+							return new Point(point[0],point[1]);
+						});
+
+						points = Resample(points,resample);
+
+						for(var i = 0;i < points.length;i++){
+
+							var x = points[i].X;
+							var y = points[i].Y;
+							var z = 0;
+							/* Comprueba cual es el punto mas aproximado y obtiene su z*/
+							for(var j = 0;j < baseRing.length;j++){
+								var x2 = baseRing[j][0];
+								var y2 = baseRing[j][1];
+								/* 5 es el error que puede existir */
+								if(Math.abs(x-x2)<=5&& Math.abs(y-y2) <=5){
+									z = baseRing[j][2];
+									//console.info("yes",z)
+									break;
+								}
+							}
+							
+							resamplePoints.push([x,y,z]);
+						}
+						return resamplePoints;
+					};
+
+					baseRingPoints = resampleRing(baseRingPoints,20);
 
 					/* Dibujo el stroke en un objeto linea */
 					baseRingStroke = drawStrokeLine(baseRingPoints,escena2);
@@ -312,34 +342,21 @@
 					baseRingFlag = true;
 				}
 				else{
-
+					removeObject(stroke,escena2);
+					extrussionStroke = Resample(extrussionStroke,17);
 					/* Modifico la manera de representar los puntos */
 					var newextrussionStroke = extrussionStroke.map(function(point){
 						return [point.X,point.Y,0];
 					});
-
-					/* Obtengo la normal y centro  aplicada la matriz de rotacion con que se roto el stroke */
-					baseRingNormalAndCenter = applyTransformToNormalAndCenter(baseRingStroke,baseRingNormalAndCenter);
-					var normal = baseRingNormalAndCenter.normal;
-					var center = baseRingNormalAndCenter.gravityCenter;
 					
-					/* Obtengo un punto del stroke */
-					var point = [baseRing[0].x,baseRing[0].y,baseRing[0].z];
-					
-					/* Obtengo el punto rotado */
-					point = applyTransform(baseRingStroke,point);
-
-					/* Genero un vector al centro del base ring */
-					var vector = [point[0]-center[0],point[1]-center[1],point[2]-center[2]];
-					
-					/* Obtengo el nuevo stroke proyectado */
-					var projectedExtrussion = extrussion(normal,center,vector,[0, 0, canvasHeight+100],newextrussionStroke,stroke);
+					var projectedExtrussion = extrussion(baseRingPoints,baseRingStroke,newextrussionStroke,[0, 0, canvasHeight+100],stroke);
 
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
-					removeObject(stroke,escena2);
+					//removeObject(stroke,escena2);
 
-					console.info("projected",projectedExtrussion)
-					stroke.push(drawStrokeLine(projectedExtrussion,escena2));
+					console.info("projected",projectedExtrussion);
+					baseRingFlag = false;
+					//stroke.push(drawStrokeLine(projectedExtrussion,escena2));
 				}
 			}
 			
@@ -521,6 +538,8 @@
 			if(baseRingStroke!=null){
 
 				baseRingStroke.quaternion.multiplyQuaternions(deltaRotationQuaternion, baseRingStroke.quaternion);
+				//baseRingStroke2.quaternion.multiplyQuaternions(deltaRotationQuaternion, baseRingStroke.quaternion);
+				
 				//applyTransformToItsGeometry(baseRingStroke);
 				//console.info(baseRingStroke.geometry.vertices[0]);
 			}
@@ -553,21 +572,29 @@
 		function applyTransformToNormalAndCenter(object,normalAndCenter){
 			/* Object has its own matrix that contains its position, quaternion, rotation and scale 		values,when we call updateMatrix we set the matrix with this values
 			*/
+
 			var normal = normalAndCenter.normal;
 			var center = normalAndCenter.gravityCenter;
+			var vectorP = normalAndCenter.vectorP;
 
 			object.updateMatrix();
 
 			/* Apply the matrix to the geometry object */
 			var normalVector = new THREE.Vector3( normal[0], normal[1], normal[2] );
 			var centerVector = new THREE.Vector3( center[0], center[1], center[2] );
+			
+			var vectorPVector = new THREE.Vector3( vectorP[0], vectorP[1], vectorP[2] );
+
 			normalVector.applyMatrix4(object.matrix);
 			centerVector.applyMatrix4(object.matrix);
+			//vectorPVector.applyMatrix4(object.matrix);
 
 			object.updateMatrix();
 
 			normalAndCenter.normal = [normalVector.x,normalVector.y,normalVector.z];
 			normalAndCenter.gravityCenter = [centerVector.x,centerVector.y,centerVector.z];
+			normalAndCenter.vectorP = [vectorPVector.x,vectorPVector.y,vectorPVector.z];
+
 			return normalAndCenter;
 			//console.info(normalAndCenter.normal,normalAndCenter.gravityCenter)
 			//return [b.x,b.y,b.z];
