@@ -167,6 +167,7 @@ function generateCopyRings(stroke,normalVector,gravityPoint,strokeDibujar,baseRi
 	var axisVector = normalize(normalVector);
 	var copyRings = [];
 	var lastPoint;
+	copyRings.push(baseRing);
 	parameters.forEach(function(parameter,index,array){
 		var factor = parameter.resizeFactor;
 		var angle = parameter.angle;
