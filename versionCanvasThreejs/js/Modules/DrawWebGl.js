@@ -87,7 +87,7 @@ function newLineWebGl(vertices){
 function newLineWebGlWith2points(point1,point2){
 
 	// agregamos un material para que el punto tenga color
-	var Material=new THREE.PointsMaterial({color:0XFF0000,size:5});
+	var Material=new THREE.LineBasicMaterial({color:0XFF0000,linewidth:50});
 
 	var geometry = new THREE.Geometry();
 	var vertices=[point1,point2];

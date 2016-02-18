@@ -80,7 +80,7 @@
 			document.getElementById("myCanvas").appendChild(render.domElement);		
 
 			render2 = new THREE.WebGLRenderer();
-			render2.setClearColor(0x000000, 1);
+			render2.setClearColor(0xECF8FA, 1);
 			render2.setSize(canvasWidth, canvasHeight);
 			document.getElementById("myCanvas2").appendChild(render2.domElement);		
 			initScene();  
@@ -108,8 +108,8 @@
 			escena.add(camara);
 
 			escena2 = new THREE.Scene();
-			var axis2 = new THREE.AxisHelper(500);
-			escena2.add(axis2);
+			//var axis2 = new THREE.AxisHelper(500);
+			//escena2.add(axis2);
 			escena2.add( spotLight );
 			//escena2.add( spotLight2 );
 			//escena2.add( spotLight2 );
@@ -242,8 +242,9 @@
 			else if (MODE.EXTRUSSION){
 
 				if(!baseRingFlag){
-					x = (e.clientX / canvasWidth) * 2 - 1;
-		  			y = -(e.clientY / canvasHeight) * 2 + 1;
+					x = ((e.clientX+getScrollX())/ canvasWidth) * 2 - 1;
+		  			y = -((e.clientY+getScrollY())/ canvasHeight) * 2 + 1;
+		  			console.info("y",e.clientY+getScrollY())
 					var vector = new THREE.Vector3(x, y, 1);
 		  			vector.unproject(camara2);
 		  			raycaster.set(camara2.position, vector.sub(camara2.position ).normalize());
@@ -276,7 +277,7 @@
 
 			/* Genero el objeto en 3d */
 			if(MODE.SKETCH){
-				//removeObject(stroke,escena2);
+				removeObject(stroke,escena2);
 				get3dObject(puntos,/*parseInt(puntos.length*0.2)*/40,4);
 
 				var resamplePoints = Resample(puntos,5);
@@ -344,11 +345,11 @@
 				else{
 					removeObject(stroke,escena2);
 					extrussionStroke = Resample(extrussionStroke,17);
+					
 					/* Modifico la manera de representar los puntos */
 					var newextrussionStroke = extrussionStroke.map(function(point){
 						return [point.X,point.Y,0];
 					});
-					
 					var projectedExtrussion = extrussion(baseRingPoints,baseRingStroke,newextrussionStroke,[0, 0, canvasHeight+100],stroke);
 
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
@@ -356,7 +357,7 @@
 
 					console.info("projected",projectedExtrussion);
 					baseRingFlag = false;
-					//stroke.push(drawStrokeLine(projectedExtrussion,escena2));
+					stroke.push(drawStrokeLine(projectedExtrussion,escena2));
 				}
 			}
 			
@@ -389,7 +390,7 @@
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
 			//object3DSolid = drawTriangles(object3DSolid,escena2,true);
 			//console.info(object3D.length)
-			object3DSolid.push(draw3dObject(object3D,escena2,true,"rgb(255,255,255)"));
+			object3DSolid.push(draw3dObject(object3D,escena2,false,"rgb(255,255,255)"));
 			//MODE.ROTATION = true;MODE.SKETCH = false;
 		}
 
@@ -437,6 +438,15 @@
 			else if (typeof(window.pageYOffset) != 'undefined'){
 				scrollY = window.pageYOffset; }
 			return scrollY;
+		}
+		function getScrollX()
+		{
+			var scrollX = 0;
+			if (typeof(document.body.parentElement) != 'undefined'){
+				scrollX = document.body.parentElement.scrollLeft; }
+			else if (typeof(window.pageXOffset) != 'undefined'){
+				scrollX = window.pageXOffset; }
+			return scrollX;
 		}
 
 		/*function drawStroke(from, to,puntos)

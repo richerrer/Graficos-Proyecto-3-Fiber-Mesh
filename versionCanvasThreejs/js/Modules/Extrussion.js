@@ -18,15 +18,17 @@ function extrussion(baseRing,baseRingObjThreejs,extrussionStroke,cameraPoint,str
 	
 
 	//drawStrokeLineWith2points([0,0,0],center,stroke,escena2);
-	drawStrokeLineWith2points(center,[(ringNormal[0]+center[0])*100,(ringNormal[1]+center[1])*100,(ringNormal[2]+center[2])*100],stroke,escena2);
-	drawStrokeLineWith2points(center,[(vector[0]+center[0]),(vector[1]+center[1]),(vector[2]+center[2])],stroke,escena2);
+	//drawStrokeLineWith2points(center,[(ringNormal[0]+center[0])*100,(ringNormal[1]+center[1])*100,(ringNormal[2]+center[2])*100],stroke,escena2);
+	//drawStrokeLineWith2points(center,[(vector[0]+center[0]),(vector[1]+center[1]),(vector[2]+center[2])],stroke,escena2);
 	
 	/* Get the plane for the projection and the proejected points of the extrussion */
 	var strokePlane = getProjectionPoints(extrussionStroke,ringNormal,center,vector,cameraPoint);
 	var normalStrokePlaneEcuation = [strokePlane.planeEcuation.A,strokePlane.planeEcuation.B,strokePlane.planeEcuation.C];
 	var projectedPoints = strokePlane.projectedPoints;
-	var planeProjections = getPlanesForProjections(projectedPoints,vector,normalStrokePlaneEcuation,center,stroke,baseRingApplyTransform);
-	return 0;
+	//var planeProjections = getPlanesForProjections(projectedPoints,vector,normalStrokePlaneEcuation,center,stroke,baseRingApplyTransform);
+	var rings = generateCopyRings(projectedPoints,normalStrokePlaneEcuation,center,stroke,baseRingApplyTransform);
+	sweepRings(rings.copyRings,rings.lastPoint,object3DSolid,stroke);
+	return null;
 }
 
 /* Get the gravity point of the center */
@@ -157,8 +159,390 @@ function getTparameter(planeEcuation,point,vector){
 	return t;
 }
 
+/* Return the points that conforms the copy rings */
+function generateCopyRings(stroke,normalVector,gravityPoint,strokeDibujar,baseRing){
+	var parameters = generateParametersForRings(stroke,normalVector,strokeDibujar);
+	/* Get the distance to te origin */
+	var distance = [0-gravityPoint[0],0-gravityPoint[1],0-gravityPoint[2]];
+	var axisVector = normalize(normalVector);
+	var copyRings = [];
+	var lastPoint;
+	parameters.forEach(function(parameter,index,array){
+		var factor = parameter.resizeFactor;
+		var angle = parameter.angle;
+		var finalPosition = parameter.finalPosition;
+		var finalDistance = [finalPosition[0]-gravityPoint[0],finalPosition[1]-gravityPoint[1],finalPosition[2]-gravityPoint[2]];
+		
+		if(angle != null && factor!= null){
+			var baseRingNew = baseRing.map(function(point){
+				/*Move a point such distance (distance from the gravity point to the origin)*/
+				point = translatePoint(point,distance);
+				/* Resize de point */
+				point = resizePoint(point,factor);
+				/* Rotate a point*/
+				point = rotatePoint(point,angle,axisVector);
+				/* Translate the point to the original position*/
+				point = translatePoint(point,[-distance[0],-distance[1],-distance[2]]);
+				/* Translate the point to the final position*/
+				point = translatePoint(point,finalDistance);
+
+				return point;
+			});
+			//strokeDibujar.push(drawStrokeLine(baseRingNew,escena2));
+			copyRings.push(baseRingNew);
+		}
+		/* Get the final position to sweep the triangles*/
+		else
+			lastPoint = finalPosition;
+
+	});
+
+	return {copyRings:copyRings,lastPoint:lastPoint};
+	
+}
+
+/* Translate a point give it a distance */
+function translatePoint(point,distance){
+	point = [point[0]+distance[0],point[1]+distance[1],point[2]+distance[2]];
+	return point;
+}
+
+/* Resize a point give it a factor */
+function resizePoint(point,factor){
+	point = [point[0],point[1]*factor,point[2]*factor];
+	return point;
+}
+
+/* Rotate a point in the axis vector that has to be normalize*/
+function rotatePoint(point,angle,axisVector){
+	var angleR = -(angle)*Math.PI/180;
+	var cos = Math.cos(angleR);
+	var sin = Math.sin(angleR);
+	var ux = axisVector[0];
+	var uy = axisVector[1];
+	var uz = axisVector[2];
+
+	var rotx = ((ux*ux*(1-cos))+cos)*point[0] + ((ux*uy*(1-cos)) - uz*sin)*point[1] + ((ux*uy*(1-cos)) + uy*sin)*point[2];
+	var roty = ((uy*ux*(1-cos)) + uz*sin)*point[0] + (cos + (uy*uy*(1-cos)))*point[1] + ((uz*uy*(1-cos)) - ux*sin)*point[2];
+	var rotz = ((ux*uz*(1-cos)) - uy*sin)*point[0] + ((uy*uz*(1-cos)) + ux*sin)*point[1] + (cos + (uz*uz*(1-cos)))*point[2];
+	point = [rotx,roty,rotz];
+	return point;
+}
+
+/* Get the parameters to generate the copies for the ring base along the extrussion stroke */
+function generateParametersForRings(stroke,normalVector,strokeDibujar){
+	var leftPointerIndex = 0;
+	var rightPointerIndex = stroke.length-1;
+	var originalDistance = 0;
+	var originalVector = null;
+	/* Variable that contains the parameters for the copie rings */
+	var finalParameters = [];
+
+	while(leftPointerIndex != rightPointerIndex){
+		var leftPointer = stroke[leftPointerIndex];
+		var rightPointer = stroke[rightPointerIndex];
+		//drawStrokeLineWith2points(leftPointer,rightPointer,strokeDibujar,escena2);
+		var dx = leftPointer[0] - rightPointer[0];
+		var dy = leftPointer[1] - rightPointer[1];
+		var dz = leftPointer[2] - rightPointer[2];
+		/* Get the distance of the vector */
+		var distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		/* Get vector */
+		var vector = [leftPointer[0]-rightPointer[0],leftPointer[1]-rightPointer[1],leftPointer[2]-rightPointer[2]];
+		/* Get the original distance and vector */
+		if(originalDistance == 0)
+			originalDistance = distance;
+		if(originalVector==null)
+			originalVector = vector;
+		/* Get the angle between the actual vector and the original vector, the normal vector specified the axis rotation*/
+		var angle = getAngleBetweenVectors(vector,originalVector,normalVector);
+		/* Get the factor the ring has to resize */
+		var factor = distance/originalDistance;
+		/* Get the mid point of the vector*/
+		var midPoint = [(leftPointer[0]+rightPointer[0])/2,(leftPointer[1]+rightPointer[1])/2,(leftPointer[2]+rightPointer[2])/2];
+		finalParameters.push({finalPosition:midPoint,angle:angle,resizeFactor:factor});
+		/* If I am in the last pointers*/
+		if(leftPointerIndex+1 == rightPointerIndex-1){
+			break;
+		}
+		/* Get the first diagonal vector and their coresponds vectors to get the angles */
+		var a = leftPointer;
+		var b = stroke[rightPointerIndex-1];
+		var c = stroke[rightPointerIndex-2];
+		var d = stroke[leftPointerIndex+1];
+		
+		var angleDV1 = getErrorAngle(a,b,c,d,90);
+		var diagonalVector1 = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+
+		/* Get the second diagonal vector and their corresponds vectors to get the angles*/
+		var a = rightPointer;
+		var b = stroke[leftPointerIndex+1];
+		var c = stroke[leftPointerIndex+2];
+		var d = stroke[rightPointerIndex-1];
+		
+		var angleDV2 = getErrorAngle(a,b,c,d,90);
+		var diagonalVector2 = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+
+		/* Get the third diagonal vector */
+		var a = stroke[leftPointerIndex+1];
+		var b = stroke[rightPointerIndex-1];
+		var c = stroke[rightPointerIndex-2];	
+		var d = stroke[leftPointerIndex+2];
+
+		var angleDV3 = getErrorAngle(a,b,c,d,90);
+		var diagonalVector3 = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+		var resultAngle = getMinValue(angleDV1,angleDV2,angleDV3);
+
+		/*if(resultAngle == 1){
+			rightPointerIndex = rightPointerIndex-1;
+		}
+		else if(resultAngle == 2){
+			leftPointerIndex = leftPointerIndex+1;
+		}
+		else if(resultAngle == 3){
+			leftPointerIndex = leftPointerIndex+1;
+			rightPointerIndex = rightPointerIndex-1;		
+		}*/
+		leftPointerIndex = leftPointerIndex+1;
+		rightPointerIndex = rightPointerIndex-1;
+		
+	}
+	/* Add the las point to sweep the ring */
+	finalParameters.push({finalPosition:stroke[leftPointerIndex+1],angle:null,resizeFactor:null});
+	return finalParameters;
+}
+
+/*Generate the final triangles for the extrussion stroke*/
+function sweepRings(rings,lastPoint,strokeDibujar){
+	for(var j = 1; j < rings.length; j ++){
+		var ring1=null;
+		var ring2=null;
+		
+		ring1 = rings[j-1];
+		ring2 = rings[j];
+		var finalTriangles = generateTrianglesExtrussion(ring1,ring2);
+		var mesh = generateMesh3dObject2(finalTriangles,false,"rgb(255,255,255)");
+		escena2.add(mesh);
+		object3DSolid.push(mesh);
+	}
+
+	var finalTriangles = generateTrianglesExtrussionWithFinalPoint(rings[rings.length-1],lastPoint,strokeDibujar);
+	var mesh = generateMesh3dObject2(finalTriangles,false,"rgb(255,255,255)");
+	escena2.add(mesh);
+	object3DSolid.push(mesh);
+
+}
 
 function  getPlanesForProjections(stroke,vector,normalVector,gravityPoint,strokeDibujar,baseRing){
+	
+	var planeEcuations = [];
+	var leftPointerIndex = 0;
+	var rightPointerIndex = stroke.length-1;
+	var plane = null;
+	var originalDistance = 0;
+	var originalVector = null;var contador  = 0;var anglep=0;
+	var resultRings = [];
+	var u = normalize(normalVector);
+	while(leftPointerIndex != rightPointerIndex){
+		contador++;
+		var leftPointer = stroke[leftPointerIndex];
+		var rightPointer = stroke[rightPointerIndex];
+		//drawStrokeLineWith2points(leftPointer,rightPointer,strokeDibujar,escena2);
+		var dx = leftPointer[0] - rightPointer[0];
+		var dy = leftPointer[1] - rightPointer[1];
+		var dz = leftPointer[2] - rightPointer[2];
+
+		var distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		var vector = [leftPointer[0]-rightPointer[0],leftPointer[1]-rightPointer[1],leftPointer[2]-rightPointer[2]];
+		if(originalDistance == 0)
+			originalDistance = distance;
+		if(originalVector==null)
+			originalVector = vector;
+		
+		var angle = getAngleBetweenVectors(vector,originalVector,normalVector);
+		//console.info("angulos",angle)
+		var factor = distance/originalDistance;
+		//console.info("factor",factor)
+		
+		//var angle = getAngleBetweenVectors(vector,originalVector);
+
+		var midPoint = [(leftPointer[0]+rightPointer[0])/2,(leftPointer[1]+rightPointer[1])/2,(leftPointer[2]+rightPointer[2])/2];
+		var xValue = midPoint[0]-gravityPoint[0];
+		var yValue = midPoint[1]-gravityPoint[1];
+		var zValue = midPoint[2]-gravityPoint[2];
+		
+		//var p1 = baseRingNormalAndCenter.gravityCenter;
+		var value = [0-gravityPoint[0],0-gravityPoint[1],0-gravityPoint[2]]
+		var baseRingNew = baseRing.map(function(point){
+			/* puntos originales*/
+			var result = [point[0],point[1],point[2]];
+
+			/* puntos trasladados al origen*/
+			result = [result[0]+value[0],result[1]+value[1],result[2]+value[2]];
+
+			/* puntos escalados */
+			var factor = (distance/originalDistance);
+			//console.info("factor",factor)
+			result = [result[0],result[1]*factor,result[2]*factor];
+
+			/* Puntos rotados */
+			var angleR = -(angle)*Math.PI/180;
+			var cos = Math.cos(angleR);
+			var sin = Math.sin(angleR);
+			var ux = u[0];
+			var uy = u[1];
+			var uz = u[2];
+
+			var rotx = ((ux*ux*(1-cos))+cos)*result[0] + ((ux*uy*(1-cos)) - uz*sin)*result[1] + ((ux*uy*(1-cos)) + uy*sin)*result[2];
+			var roty = ((uy*ux*(1-cos)) + uz*sin)*result[0] + (cos + (uy*uy*(1-cos)))*result[1] + ((uz*uy*(1-cos)) - ux*sin)*result[2];
+			var rotz = ((ux*uz*(1-cos)) - uy*sin)*result[0] + ((uy*uz*(1-cos)) + ux*sin)*result[1] + (cos + (uz*uz*(1-cos)))*result[2];
+			result = [rotx,roty,rotz];
+
+			//console.info("angulo",angle)
+			/* puntos trasladados a su posicion original*/
+			result = [result[0]-value[0],result[1]-value[1],result[2]-value[2]];
+
+			/* Puntos en su posicion final*/
+			result = [result[0]+xValue,result[1]+yValue,result[2]+zValue];
+			return result;/*[point[0]+xValue,point[1]+yValue,point[2]+zValue];*/
+		});
+		resultRings.push(baseRingNew);
+		if(contador>0){
+			//strokeDibujar.push(drawStrokeLine(baseRingNew,escena2));
+			drawStrokeLineWith2points(leftPointer,rightPointer,strokeDibujar,escena2);
+			//console.info("angulo",angle)
+		}
+		if(leftPointerIndex+1 == rightPointerIndex-1){
+			break;
+		}
+		//drawStrokeLineWith2points([0,0,0],midPoint,strokeDibujar,escena2);
+		//console.info("new",xValue,yValue,zValue);
+
+		/* Get the first diagonal vector and their coresponds vectors to get the angles */
+		var a = leftPointer;
+		var b = stroke[rightPointerIndex-1];
+		var c = stroke[rightPointerIndex-2];
+		var d = stroke[leftPointerIndex+1];
+		
+		var angleDV1 = getErrorAngle(a,b,c,d,90);
+		var diagonalVector1 = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+
+		/* Get the second diagonal vector and their corresponds vectors to get the angles*/
+		var a = rightPointer;
+		var b = stroke[leftPointerIndex+1];
+		var c = stroke[leftPointerIndex+2];
+		var d = stroke[rightPointerIndex-1];
+		
+		var angleDV2 = getErrorAngle(a,b,c,d,90);
+		var diagonalVector2 = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+
+		/* Get the third diagonal vector */
+		var a = stroke[leftPointerIndex+1];
+		var b = stroke[rightPointerIndex-1];
+		var c = stroke[rightPointerIndex-2];	
+		var d = stroke[leftPointerIndex+2];
+
+		var angleDV3 = getErrorAngle(a,b,c,d,90);
+		var diagonalVector3 = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+		//console.info(angleDV1,angleDV2,angleDV3)
+		/*if(angleDV1 == NaN||angleDV2 == NaN||angleDV3 == NaN)
+			continue*/
+		var resultAngle = getMinValue(angleDV1,angleDV2,angleDV3);
+		console.info(angleDV1,angleDV2,angleDV3,"best",resultAngle)
+		if(resultAngle == 1){
+			rightPointerIndex = rightPointerIndex-1;
+			//plane = getPlaneValues(rightPointer,diagonalVector1,normalVector);
+		}
+		else if(resultAngle == 2){
+			leftPointerIndex = leftPointerIndex+1;
+			//plane = getPlaneValues(leftPointer,diagonalVector2,normalVector);
+		}
+		else if(resultAngle == 3){
+			leftPointerIndex = leftPointerIndex+1;
+			rightPointerIndex = rightPointerIndex-1;
+			//plane = getPlaneValues(stroke[leftPointerIndex],diagonalVector3,normalVector);
+			//console.info("yes")
+		}
+		else{
+			//break;
+		}
+		//leftPointerIndex = leftPointerIndex+1;
+		//rightPointerIndex = rightPointerIndex-1;
+		planeEcuations.push(plane);
+		
+
+		//break;
+	}
+	//console.info("result",resultRings.length,resultRings)
+
+	var ring = resultRings[0];
+	for(var j = 0; j < ring.length; j ++){
+		var point1 = baseRing[j];
+		var point2 = ring[j];
+		//drawStrokeLineWith2points(point1,point2,strokeDibujar,escena2);
+	}
+
+	for(var l = 1; l < resultRings.length; l ++){
+		var ring1 = resultRings[l-1];
+		var ring2 = resultRings[l];
+		
+		for(var j = 0; j < ring1.length; j ++){
+			var point1 = ring1[j];
+			var point2 = ring2[j];
+			//drawStrokeLineWith2points(point1,point2,strokeDibujar,escena2);
+		}
+	}
+
+	/* Solo para cuando es impar*/
+	//var lastPoint = stroke[((stroke.length-1)/2) +1];
+	/*var lastRing = resultRings[resultRings.length-1];
+	var cX = 0;
+	var cY = 0;
+	var cZ = 0;
+	for (var i = 1;i < lastRing.length;i++){
+		cX = cX + lastRing[i-1][0];
+		cY = cY + lastRing[i-1][1];
+		cZ = cZ + lastRing[i-1][2];
+	}*/
+	
+	/*var lastPoint = [cX/lastRing.length,cY/lastRing.length,cZ/lastRing.length];
+	for(var j = 0; j < lastRing.length; j ++){
+		var point = lastRing[j];
+		//drawStrokeLineWith2points(point,lastPoint,strokeDibujar,escena2);
+	}
+	*/
+	for(var j = 0; j < resultRings.length; j ++){
+		var ring1=null;
+		var ring2=null;
+		if(j == 0){
+			ring1 = baseRing;
+			ring2 = resultRings[j-1];
+			//var finalTriangles = generateTrianglesExtrussion(ring1,ring2);
+			//var mesh = generateMesh3dObject2(finalTriangles,false,"rgb(255,255,255)");
+			//escena2.add(mesh);
+			//object3DSolid.push(mesh);
+		}
+		else{
+			ring1 = resultRings[j-1];
+			ring2 = resultRings[j];
+			var finalTriangles = generateTrianglesExtrussion(ring1,ring2);
+			var mesh = generateMesh3dObject2(finalTriangles,true,"rgb(255,255,255)");
+			escena2.add(mesh);
+			object3DSolid.push(mesh);
+		}
+		
+	}
+	
+	var finalTriangles = generateTrianglesExtrussion(resultRings[0],resultRings[1]);
+	
+	var mesh = generateMesh3dObject2(finalTriangles,true,"rgb(255,255,255)");
+	//escena2.add(mesh);
+	//object3DSolid.push(mesh);
+	console.info("final",finalTriangles);
+	return planeEcuations;
+}
+
+function  getPlanesForProjections2(stroke,vector,normalVector,gravityPoint,strokeDibujar,baseRing){
 	
 	var planeEcuations = [];
 	var leftPointerIndex = 0;
@@ -360,43 +744,73 @@ function  getPlanesForProjections(stroke,vector,normalVector,gravityPoint,stroke
 	return planeEcuations;
 }
 
+
 /* Give it 4 points returns the average angle between the vectors formed by this points*/
 function getAverageAngle(a,b,c,d){
 
 	var vectorAB = [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
 	var vectorCB = [c[0]-b[0],c[1]-b[1],c[2]-b[2]];
-	var angle1 = getAngleBetweenVectors(vectorAB,vectorCB);
+	var angle1 = getAngleBetweenVectors(vectorAB,vectorCB,null);
 
 	var vectorDA = [d[0]-a[0],d[1]-a[1],d[2]-a[2]];
 	var vectorBA = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
-	var angle2 = getAngleBetweenVectors(vectorDA,vectorBA);
+	var angle2 = getAngleBetweenVectors(vectorDA,vectorBA,null);
 	var angleAVG = (angle1+angle2)/2;
 
 	return angleAVG;
 }
 
-/* Angle between v1 y v2 */
-function getAngleBetweenVectors(v1,v2){
-	/*var num = (v1[0]*v2[0]) + (v1[1]*v2[1]) +(v1[2]*v2[2]);
-	var magV1 = Math.sqrt((v1[0]*v1[0]) + (v1[1]*v1[1]) + (v1[2]*v1[2]));
-	var magV2 = Math.sqrt((v2[0]*v2[0]) + (v2[1]*v2[1]) + (v2[2]*v2[2]));
+/* Give it 4 points returns the average angle between the vectors formed by this points*/
+function getErrorAngle(a,b,c,d,value){
 
-	var denom = magV1 * magV2;
-	var val = num/denom;
-	if(denom == 0)
-		val = 0
-	if(val>1)val = 1
-	if(val<0)val = 0
-	var angle = (Math.acos(val)*180)/3.1416;
-	//console.info("val",angle,num,denom,num/denom)
-	return angle;*/
+	var vectorAB = [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+	var vectorCB = [c[0]-b[0],c[1]-b[1],c[2]-b[2]];
+	var angle1 = getAngleBetweenVectors(vectorAB,vectorCB,null);
 
+	var vectorDA = [d[0]-a[0],d[1]-a[1],d[2]-a[2]];
+	var vectorBA = [b[0]-a[0],b[1]-a[1],b[2]-a[2]];
+	var angle2 = getAngleBetweenVectors(vectorDA,vectorBA,null);
+
+	var error = Math.abs(angle1-value) + Math.abs(angle2-value);
+	
+	return error;
+}
+
+function getMinValue(v1,v2,v3){
+	if(v1 <= v2 && v1 <= v3)
+		return 1;
+	if(v2 <= v1 && v2 <= v3)
+		return 2;
+	if(v3 <= v1 && v3 <= v2)
+		return 3;
+	console.info("Error en getMinValue",v1,v2,v3);
+	return 0;
+}
+
+/* Angle between v1 y v2, its necesary give it the rotate vector u, to know if the angle es positive or negative, if
+   this parameter is null, the result angle is always positive*/
+function getAngleBetweenVectors(v1,v2,u){
+	
 	var a = new THREE.Vector3( v1[0], v1[1], v1[2] );
 	var b = new THREE.Vector3( v2[0], v2[1], v2[2]  );
 	var radAngle = a.angleTo(b);
 	var angle = (radAngle*180)/ Math.PI;
-	//console.info("angle",angle,radAngle,a,b)
-	return angle;
+
+	if(u == null)
+		return angle;
+
+	/* This represent the axis vector to rotate the vector */
+	var axisVector = new THREE.Vector3(u[0], u[1], u[2]);
+
+	//axisVector.crossVectors(a,b);
+	axisVector.normalize();
+	a.applyAxisAngle(axisVector,radAngle);
+	var flagAngle = (a.angleTo(b)*180)/ Math.PI;
+	//console.info("A",a,"b",b,"angulo",angle2)
+	if(flagAngle < 1)
+		return angle;
+	else
+		return -angle;
 }
 
 /* obtiene el valor mas cercano al valor enviado por parametro*/
@@ -451,6 +865,31 @@ function generateTrianglesExtrussion(baseRing1,baseRing2){
 		var triangle2 = new Triangle(vertex1,vertex4,vertex2,[edge1Triangle2,edge2Triangle2,edge3Triangle2]);
 
 		finalTriangles.push(triangle1,triangle2);
+
+	}
+	return finalTriangles;
+}
+
+function generateTrianglesExtrussionWithFinalPoint(baseRing,finalPoint,strokeDibujar){
+	var finalTriangles = [];
+	console.info("last",finalPoint)
+	//drawStrokeLineWith2points([0,0,0],finalPoint,strokeDibujar,escena2);
+	for (var i = 1; i < baseRing.length; i++){
+		var point1 = baseRing[i-1];
+		var point2 = baseRing[i];
+		//drawStrokeLineWith2points(point1,finalPoint,strokeDibujar,escena2);
+		//drawStrokeLineWith2points(point2,finalPoint,strokeDibujar,escena2);
+		var vertex1 = new Vertex(point1[0],point1[1],point1[2]);
+		var vertex2 = new Vertex(point2[0],point2[1],point2[2]);
+		var vertex3 = new Vertex(finalPoint[0],finalPoint[1],finalPoint[2]);
+		
+		var edge1Triangle = new Edge(vertex1,vertex3,5);
+		var edge2Triangle = new Edge(vertex3,vertex2,5);
+		var edge3Triangle = new Edge(vertex2,vertex1,5);
+
+		var triangle = new Triangle(vertex1,vertex3,vertex2,[edge1Triangle,edge2Triangle,edge3Triangle]);
+		
+		finalTriangles.push(triangle);
 
 	}
 	return finalTriangles;
