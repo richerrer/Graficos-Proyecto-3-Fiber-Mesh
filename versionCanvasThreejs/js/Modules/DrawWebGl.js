@@ -62,7 +62,7 @@ function draw3dObject(listTriangles,scene,solid,color){
 function newLineWebGl(vertices){
 
 	// agregamos un material para que el punto tenga color
-	var Material=new THREE.PointsMaterial({color:0XFF0000,size:5});
+	var Material=new THREE.PointsMaterial({color:0X0000FF,size:10});
 
 	var geometry = new THREE.Geometry();
 
@@ -87,7 +87,7 @@ function newLineWebGl(vertices){
 function newLineWebGlWith2points(point1,point2){
 
 	// agregamos un material para que el punto tenga color
-	var Material=new THREE.LineBasicMaterial({color:0XFF0000,linewidth:50});
+	var Material=new THREE.LineBasicMaterial({color:0X00FF00,linewidth:10});
 
 	var geometry = new THREE.Geometry();
 	var vertices=[point1,point2];

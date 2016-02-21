@@ -1,6 +1,8 @@
 <!DOCTYPE HTML>
 <html>
 <head>
+
+
 	<title>Graficos 2 Proyecto 2</title>
 	<script src="js/three.js"></script>
 	<script type="text/javascript" src="js/ndollar.js"></script>
@@ -14,15 +16,21 @@
 	<script type="text/javascript" src="js/Modules/FinalTriangulation.js"></script>
 	<script type="text/javascript" src="js/Modules/DrawWebGl.js"></script>
 	<script type="text/javascript" src="js/Modules/Extrussion.js"></script>
+	<script type="text/javascript" src="js/jscolor.js"></script>
+	<link rel="stylesheet" type="text/css" href="mystyle.css">
+	<link rel="stylesheet" type="text/css" href="fonts/style.css">
 	<script type="text/javascript"> 
 		var escena,escena2;
 		var camara,camara2;
 		var render,render2;
-		var value = 0.01;
-		var canvasRect = {x: 19, y: 25, width: 1450, height: 400};//var canvasRect = {x: 19, y: 138, width: 800, height: 400};
-		var canvasWidth = 1480;
-		var canvasHeight = 600;
-		var value2 = 10;
+		var puntosbu, samplebu;
+		var malla=false;
+		
+		var canvasWidth = window.innerWidth - 100;
+		var canvasHeight = window.innerHeight + 40;
+
+		
+
 		var lastTime;
 		var raycaster;
 		
@@ -59,10 +67,12 @@
 		var pressed = false;
 
 		function webGLStart() {
+			
 			document.onselectstart = function() { return false; }
 			document.onmousedown = function() { return false; }
 			document.onkeydown=teclaPulsada;
     		document.onkeyup=teclaSoltada;
+    		document.getElementById("b1").style.color = "yellow";
 			puntos = [];
 			init();
 			//renderEscena();
@@ -78,11 +88,12 @@
 			render.setClearColor(0xECF8FA, 1);
 			render.setSize(canvasWidth, canvasHeight);
 			document.getElementById("myCanvas").appendChild(render.domElement);	*/	
+			var div = document.getElementById('myCanvas2');
 
-			render2 = new THREE.WebGLRenderer();
-			render2.setClearColor(0xECF8FA, 1);
+			render2 = new THREE.WebGLRenderer( { alpha: true } );
+			
 			render2.setSize(canvasWidth, canvasHeight);
-			document.getElementById("myCanvas2").appendChild(render2.domElement);		
+			div.appendChild(render2.domElement);		
 			initScene();  
 			raycaster = new THREE.Raycaster();
 		}
@@ -91,30 +102,44 @@
 		{	
 			
 			var spotLight = new THREE.SpotLight( 0xFFFFFF );
-			spotLight2 = new THREE.SpotLight( 0xFFFFFF );
-			spotLight.position.set( 0,0,800);
-			spotLight2.position.set(100,100,800);
-			var luzAmbiente = new THREE.AmbientLight(0xff4fff);	
-			//wspotLight.castShadow = true;
-			//escena = new THREE.Scene();
-			//var axis = new THREE.AxisHelper(500);//500
-			//escena.add(axis);
-			//escena.add( spotLight );
+			var spotLight2 = new THREE.SpotLight( 0xFFAB00   );
+			var spotLight3 = new THREE.SpotLight( 0xFFFFFF );
+			/*var spotLight4 = new THREE.SpotLight( 0x28323D );
+			var spotLight5 = new THREE.SpotLight( 0x28323D );
+			var spotLight6 = new THREE.SpotLight( 0x28323D );*/
+
+			//var spotLight3 = new THREE.SpotLight( 0xffffff );
+
+
+			spotLight.position.set( 0,0,15000);
+			spotLight2.position.set(0,15000,0);
+			spotLight3.position.set( 0,15000,0);
+			/*spotLight4.position.set( 0,0,-15000);
+			spotLight5.position.set( -15000,0,0);
+			spotLight6.position.set( 0,-15000,0);*/
+
+
+			var luzAmbiente = new THREE.AmbientLight(0xffffff);	
 			
-			//escena.add(luzAmbiente);
-			//camara = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
-			//camara.position.set(0, 0, canvasHeight+100);
-			//camara.lookAt(escena.position);
-			//escena.add(camara);
 
 			escena2 = new THREE.Scene();
 			//var axis2 = new THREE.AxisHelper(500);
 			//escena2.add(axis2);
 			escena2.add( spotLight );
+			escena2.add( spotLight2 );
+			escena2.add( spotLight3 );
+			/*escena2.add( spotLight4 );
+			escena2.add( spotLight5 );
+			escena2.add( spotLight6 );*/
+			//escena2.add( luzAmbiente );
+
 			camara2= new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
 			//camara.position.set(200, 200, 500);
 			camara2.position.set(0, 0, canvasHeight+100);
 			camara2.lookAt(escena2.position);
+
+
+
 			escena2.add(camara2);
 
 
@@ -134,6 +159,7 @@
 			var coordinates = getCoordinatesToRender(e);
 			
 			pressed = true;
+				
 
 			x = coordinates.x;
 			y = coordinates.y;
@@ -149,8 +175,9 @@
 
 				/* Create the base ring */
 				if(!baseRingFlag){
-					x = (e.clientX / canvasWidth) * 2 - 1;
-		  			y = -(e.clientY / canvasHeight) * 2 + 1;
+
+					x = (e.clientX-90 / canvasWidth) * 2 - 1  ;
+		  			y = -(e.clientY-70 / canvasHeight) * 2 + 1  ;
 					//console.info("",x,y)
 					var vector = new THREE.Vector3(x, y, 1);
 		  			vector.unproject(camara2);
@@ -166,6 +193,8 @@
 		 			/*for ( var i = 0; i < intersects.length; i++ ) {
 						intersects[ 1 ].object.material.color.set( 0xff0000 );
 					}*/
+
+					
 				}
 
 				/* Create the extrussion stroke*/
@@ -182,9 +211,11 @@
 			//var deltaMove = {x: e.offsetX-previousMousePosition.x,y: e.offsetY-previousMousePosition.y};
     		//previousMousePosition = {x: e.offsetX,y: e.offsetY};
     		var coordinates = getCoordinatesToRender(e);
+    		
 			x = coordinates.x;
 			y = coordinates.y;
-			
+
+
 			var deltaMove = {x: x-previousMousePosition.x,y: -y-previousMousePosition.y};
     		previousMousePosition = {x: x,y: -y};
     		
@@ -212,9 +243,9 @@
 			else if (MODE.EXTRUSSION){
 
 				if(!baseRingFlag){
-					x = ((e.clientX+getScrollX())/ canvasWidth) * 2 - 1;
-		  			y = -((e.clientY+getScrollY())/ canvasHeight) * 2 + 1;
-		  			console.info("y",e.clientY+getScrollY())
+			
+					x = ((e.clientX+getScrollX()-90)/ canvasWidth) * 2 - 1 ;
+		  			y = -((e.clientY+getScrollY()-70)/ canvasHeight) * 2 + 1 ;
 					var vector = new THREE.Vector3(x, y, 1);
 		  			vector.unproject(camara2);
 		  			raycaster.set(camara2.position, vector.sub(camara2.position ).normalize());
@@ -226,6 +257,8 @@
 						var pTo = baseRing[baseRing.length - 1];
 						drawStrokeLineWith2points([pFrom.x,pFrom.y,pFrom.z+5],[pTo.x,pTo.y,pTo.z+5],stroke,escena2);
 		 			}
+
+		 		
 		 		}
 
 		 		else{
@@ -234,6 +267,7 @@
 					var pTo = extrussionStroke[extrussionStroke.length - 1];
 					//console.info(",",pFrom)
 					drawStrokeLineWith2points([pFrom.X,pFrom.Y,0],[pTo.X,pTo.Y,0],stroke,escena2);
+				
 		 		}
 			}
 
@@ -249,6 +283,8 @@
 			if(MODE.SKETCH){
 				removeObject(stroke,escena2);
 				var sample = parseInt(puntos.length*10/100);
+				puntosbu = puntos;
+				samplebu = sample;
 				get3dObject(puntos,/*parseInt(puntos.length*0.2)*/sample,15);
 
 				var resamplePoints = Resample(puntos,5);
@@ -266,6 +302,7 @@
 			else if(MODE.EXTRUSSION){
 				if(!baseRingFlag){
 					baseRing.push(baseRing[0]);
+
 
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego en un objeto linea */
 					removeObject(stroke,escena2);
@@ -328,8 +365,10 @@
 
 					console.info("projected",projectedExtrussion);
 					baseRingFlag = false;
+					baseRing.length=0;
 					stroke.push(drawStrokeLine(projectedExtrussion,escena2));
 				}
+			
 			}
 			
 		}
@@ -361,9 +400,11 @@
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
 			//object3DSolid = drawTriangles(object3DSolid,escena2,true);
 			//console.info(object3D.length)
-			object3DSolid.push(draw3dObject(object3D,escena2,false,"rgb(255,255,255)"));
+			object3DSolid.push(draw3dObject(object3D,escena2,malla,"rgb(255,255,255)"));
 			//MODE.ROTATION = true;MODE.SKETCH = false;
 		}
+
+
 
 		function clearCanvas(){
 			/* Remuevo los puntos remuestreados */
@@ -379,6 +420,8 @@
 		function buttonOnClick(){
 			clearCanvas();
 		}
+
+		
 
 		/* Remueve un objeto de la escena*/
 		function removeObject(object,scene){
@@ -450,6 +493,15 @@
     		setTimeout(animarEscena,1000/24) //1.6 60 frames por segundo
 		}
 
+		function changeView(){
+			clearCanvas();
+			if(malla==false)
+				malla=true;
+			else
+				malla=false;
+			get3dObject(puntosbu,/*parseInt(puntos.length*0.2)*/samplebu,15);
+		}
+
 		function teclaPulsada(e)
 		{
 		    switch (e.keyCode)
@@ -468,12 +520,22 @@
 		            break;
 		        case 82://R modo Rotation
 		        	MODE = { SKETCH:false, ROTATION:true,EXTRUSSION:false  };
+		        	document.getElementById("b1").style.color = "white";
+		        	document.getElementById("b2").style.color = "white";
+		        	document.getElementById("b3").style.color = "yellow";
 		       	 	break;
 		       	case 84://T modo Sketch
 		        	MODE = { SKETCH:true, ROTATION:false,EXTRUSSION:false  };
+		        	document.getElementById("b1").style.color = "yellow";
+		        	document.getElementById("b2").style.color = "white";
+		        	document.getElementById("b3").style.color = "white";
 		       	 	break;
-		       	case 69://T modo Sketch
+		       	case 69://T modo Extrussion
 		        	MODE = { SKETCH:false, ROTATION:false,EXTRUSSION:true };
+		        	document.getElementById("b1").style.color = "white";
+		        	document.getElementById("b2").style.color = "yellow";
+		        	document.getElementById("b3").style.color = "white";
+
 		       	 	break;
 
 		    }
@@ -591,6 +653,9 @@
 			return vector;
 		}
 
+		function help(){
+			alert("I am an alert box!");
+		}
 		/* Get the vertices geometry from an object*/
 		function getVerticesObject(object){
 			console.info(object.geometry.vertices);
@@ -616,66 +681,138 @@
 		function toDegrees(angle) {
 			return angle * (180 / Math.PI);
 		}
+
+		function popup(){
+			document.getElementById('light').style.display='block';
+			document.getElementById('fade').style.display='block';
+		}
+
+		function popup2(){
+			document.getElementById('light2').style.display='block';
+			document.getElementById('fade2').style.display='block';
+		}
+
 	</script>
 </head>
 
 <body onload="webGLStart()">
-<!--<header>
-	<!--<h1 style="color: blue;">Proyecto#2 Graficos Por Computadora II - ESPOL 2015-II</h1>
-	<h2 style=";margin-left: 120px;">Grupo#6 Raul Mira / Ricardo Maya / Jose Monar </h2>-->
-<!--</header>-->
-<!-- Gesture image and canvas -->
-<table border="0" width="100%" cellspacing="0">
-	<tr>
-		<td valign="top" width="50%">
-			<div id="myCanvas2" style="background-color:#ECF8FA; border:3px solid #000000;"
-					onmousedown="mouseDownEvent(event)"
-					onmousemove="mouseMoveEvent(event)"
-					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
-					oncontextmenu="return false;">
+
+ <div id="light" class="white_content"> 
+ 	   <H2 style="text-align:center; margin-top:0px;">Instrucciones</H2>
+ 	   <table border="2" width="100%" height="80%">
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="20%"> <span class="b3 icon-autorenew"></span> </td>
+	 	  	<td valign="center" align="center" width="80%"> Actualiza el workspace, borra el contenido actual</td>
+	 	   </tr>
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="20%"> <span class="icon-palette"></span> </td>
+	 	  	<td valign="center" align="center" width="80%"> Paleta de colores para pintar el modelo 3D </td>
+	 	   </tr>
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="20%"> <span class="b3 icon-visibility"></span> </td>
+	 	  	<td valign="center" align="center" width="80%"> Cambia a modo de vista esqueleto (grid mesh view) </td>
+	 	   </tr>
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="20%"> <span class="b3 icon-mode_edit"></span> </td>
+	 	  	<td valign="center" align="center" width="80%"> Indica si esta realizando un nuevo modelo BOTON T </td>
+	 	   </tr>
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="20%"> <span class="b3 icon-border_color"></span> </td>
+	 	  	<td valign="center" align="center" width="80%"> Indica si esta editando sobre un modelo BOTON E</td>
+	 	   </tr>
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="20%"> <span class="b3 icon-3d_rotation"></span> </td>
+	 	  	<td valign="center" align="center" width="80%"> Indica si esta activo el modo rotacion BOTON R </td>
+	 	   </tr>
+ 	  </table>
+
+       <a href = "javascript:void(0)" 
+       onclick = "document.getElementById('light').style.display='none';
+       document.getElementById('fade').style.display='none'">Close</a>
+
+ </div>
+ <div id="fade" class="black_overlay"></div>
+
+<div id="light2" class="white_content"> 
+ 	   <H2 style="text-align:center; margin-top:0px;">Informacion</H2>
+ 	   <table border="2" align="center" width="90%" height="80%">
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="100%" colspan="3"> Proyecto Final - Graficos por Computadora II </td>
+	 	   </tr>
+	 	   <tr>
+	 	  	<td valign="center" align="center" width="30%" > Integrantes </td>
+	 	   	<td valign="center" align="center" width="50%" > Ricardo Maya </td>
+	 	   	<td valign="center" align="center" width="20%" > rmaya@espol.edu.ec </td>
+	 	   </tr>
+	 	   <tr>
+	 	  	<td valign="center" align="center" width="30%" ></td>
+	 	   	<td valign="center" align="center" width="50%" > Raul Mira </td>
+	 	   	<td valign="center" align="center" width="20%" > raualmir@espol.edu.ec </td>
+	 	   </tr>
+	 	   <tr>
+	 	  	<td valign="center" align="center" width="30%" > </td>
+	 	   	<td valign="center" align="center" width="50%" > Jose Monar</td>
+	 	   	<td valign="center" align="center" width="20%" > jlmonar@espol.edu.ec </td>
+	 	   </tr>
+	 	   <tr>
+	 	   	<td valign="center" align="center" width="100%" colspan="3"> II termino 2015-2016 </td>
+	 	   </tr>
+
+	 	   
+ 	  </table>
+
+       <a href = "javascript:void(0)" 
+       onclick = "document.getElementById('light2').style.display='none';
+       document.getElementById('fade2').style.display='none'">Close</a>
+
+ </div>
+ <div id="fade2" class="black_overlay"></div>
+
+<table id="window" border="3" height="100%" width="100%" cellspacing="0">
+	<tr id="fil1">
+		<td valign="top" width="100%" colspan="2">
+			<div id="myCanvas1" >	
+				Blowie 1.0
 			</div>
 		</td>
 	</tr>
-	<tr>
-		<td valign="top" width="50%">
-			<div id="myCanvas" style="background-color:#ECF8FA; border:3px solid #000000;"
+	<tr id="fil2">
+		<td id="col1" valign="top" width="20%">
+			<div id="myCanvas3" >
+				<button class="btn1 icon-help" onclick="popup()"></button>
+				<button class="btn1 icon-autorenew" onclick="clearCanvas()"></button>
+
+				<button class="btn1 icon-palette jscolor
+			    {valueElement:'valueSpan',styleElement:'styleSpan',value:'ff6699'}">
+			   	</button>
+
+				<button class="btn1 icon-visibility" onclick="changeView()" ></button>
+				<hr width=100%>
+				<button id="b1" class="btn1 icon-mode_edit"></button>
+				<button id="b2" class="btn1 icon-border_color"></button>
+				<button id="b3" class="btn1 icon-3d_rotation"></button>
+				<hr width=100%>			
+				<span class="btn1 icon-info_outline" onclick="popup2()"></span>
+				
+				
+			</div>
+		</td>
+		<td id="col2" valign="top" width="80%">
+			<div id="myCanvas2" 
 					onmousedown="mouseDownEvent(event)"
 					onmousemove="mouseMoveEvent(event)"
 					onmouseup="mouseUpEvent(event.clientX, event.clientY)"
 					oncontextmenu="return false;">
 			</div>
 		</td>
-
 		
-		<!--<td valign="top" width="100%">
-			<h2>Colores Representativos </h2>
-			<h2 style="color: red;">Cabeza = rojo </h2>
-			<h2 style="color: blue;">Cuerpo = azul </h2>
-			<h2 style="color: green;">Brazo izquierdo = verde</h2>
-			<h2 style="color: orange;">Brazo derecho = naranja </h2>
-			<h2 style="color: brown;">Pierna izquierda = cafe </h2>
-			<h2 style="color: purple;">Pierna derecha = morado </h2>
-				<button style="background-color:#44c767;
-					-moz-border-radius:28px;
-					-webkit-border-radius:28px;
-					border-radius:28px;
-					border:1px solid #18ab29;
-					display:inline-block;
-					cursor:pointer;
-					color:#ffffff;
-					font-family:Arial;
-					font-size:17px;
-					padding:16px 31px;
-					text-decoration:none;
-					text-shadow:0px 1px 0px #2f6627;"  
-					type="button"
-					onclick="buttonOnClick()"
-				>Limpiar</button>
-			
-		</td>-->
 	</tr>
 	
 </table>
+ 
+       
+
+
 </body>
 </html>
 
