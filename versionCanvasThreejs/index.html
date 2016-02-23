@@ -248,6 +248,8 @@
 
 				/* Reinicio los puntos del stroke */
 				puntos = []
+
+				
 			}
 			else if(MODE.EXTRUSSION){
 				if(!baseRingFlag){
@@ -388,6 +390,7 @@
 		}
 
 		function clear(){
+
 			initScene();
 			renderEscena();
 		}
@@ -424,12 +427,19 @@
 		}
 
 		function changeView(){
-			clearCanvas();
+			/*clearCanvas();
 			if(malla==false)
 				malla=true;
 			else
 				malla=false;
-			get3dObject(puntosbu,/*parseInt(puntos.length*0.2)*/samplebu,15);
+			get3dObject(puntosbu,/*parseInt(puntos.length*0.2)samplebu,15);*/
+			if(malla==false)
+				malla=true;
+			else
+				malla=false;
+			object3DSolid.forEach(function(obj,index,array){
+				obj.material.wireframe = malla;
+			});
 		}
 
 		function teclaPulsada(e)
