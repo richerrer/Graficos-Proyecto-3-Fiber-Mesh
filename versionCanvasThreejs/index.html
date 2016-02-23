@@ -101,9 +101,9 @@
 		function initScene()
 		{	
 			
-			var spotLight = new THREE.SpotLight( 0xFFFFFF );
-			var spotLight2 = new THREE.SpotLight( 0xFFAB00   );
-			var spotLight3 = new THREE.SpotLight( 0xFFFFFF );
+			var spotLight = new THREE.DirectionalLight( 0xFFFFFF ,0.6);
+			var spotLight2 = new THREE.DirectionalLight( 0xFFFFFF  ,0.6 );
+			//var spotLight3 = new THREE.DirectionalLight( 0xFFFFFF ,0.5);
 			/*var spotLight4 = new THREE.SpotLight( 0x28323D );
 			var spotLight5 = new THREE.SpotLight( 0x28323D );
 			var spotLight6 = new THREE.SpotLight( 0x28323D );*/
@@ -112,14 +112,14 @@
 
 
 			spotLight.position.set( 0,0,15000);
-			spotLight2.position.set(0,15000,0);
-			spotLight3.position.set( 0,15000,0);
+			spotLight2.position.set(0,1000,0);
+			//spotLight3.position.set( 0,15000,0);
 			/*spotLight4.position.set( 0,0,-15000);
 			spotLight5.position.set( -15000,0,0);
 			spotLight6.position.set( 0,-15000,0);*/
 
 
-			var luzAmbiente = new THREE.AmbientLight(0xffffff);	
+			//var luzAmbiente = new THREE.AmbientLight(0xffffff);	
 			
 
 			escena2 = new THREE.Scene();
@@ -127,13 +127,13 @@
 			//escena2.add(axis2);
 			escena2.add( spotLight );
 			escena2.add( spotLight2 );
-			escena2.add( spotLight3 );
+			//escena2.add( spotLight3 );
 			/*escena2.add( spotLight4 );
 			escena2.add( spotLight5 );
 			escena2.add( spotLight6 );*/
 			//escena2.add( luzAmbiente );
 
-			camara2= new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 1000);
+			camara2= new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 2000);
 			//camara.position.set(200, 200, 500);
 			camara2.position.set(0, 0, canvasHeight+100);
 			camara2.lookAt(escena2.position);

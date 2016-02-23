@@ -182,6 +182,8 @@ function generateMesh3dObject(triangles,solid,color){
 	var geometry = new THREE.Geometry();
 	//var Material=new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: solid});
 	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid,/*shading:THREE.FlatShading*/});
+	//var textura = new THREE.ImageUtils.loadTexture("img/cesped.jpg");
+	//var Material = new THREE.MeshLambertMaterial({ map:textura, side:THREE.DoubleSide} );
 	
 	var vertices = [];
 	var mapVertex = new Map();
@@ -242,7 +244,7 @@ function generateMesh3dObject(triangles,solid,color){
 		var i2 = mapVertex.get(key2).indexValue;
 		/* A favor de las manecillas del reloj por defecto se encuentran los triangulos ordenados de esta manera */
 		geometry.faces.push(new THREE.Face3(i0, i1, i2));
-
+		//geometry.faceVertexUvs[0].push([new THREE.Vector2(0,0),new THREE.Vector2(.5,0),new THREE.Vector2(.5,.5)]);
 		/* Negative */
 		var key0 = parseInt(triangle.v1.X).toString()+parseInt(triangle.v1.Y).toString()+parseInt(-triangle.v1.Z).toString();
 		var key1 = parseInt(triangle.v2.X).toString()+parseInt(triangle.v2.Y).toString()+parseInt(-triangle.v2.Z).toString();
@@ -256,6 +258,7 @@ function generateMesh3dObject(triangles,solid,color){
 		var i2 = mapVertex.get(key2).indexValue;
 		/* En contra de las manecillas del reloj */
 		geometry.faces.push(new THREE.Face3(i0, i2, i1));
+		//geometry.faceVertexUvs[0].push([new THREE.Vector2(0,0),new THREE.Vector2(1,0),new THREE.Vector2(1,1)]);
 	});
 
 	geometry.computeFaceNormals();
@@ -270,7 +273,6 @@ function generateMesh3dObject2(triangles,solid,color){
 	var geometry = new THREE.Geometry();
 	//var Material=new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: solid});
 	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid,/*shading:THREE.FlatShading*/});
-	
 	var vertices = [];
 	var mapVertex = new Map();
 
