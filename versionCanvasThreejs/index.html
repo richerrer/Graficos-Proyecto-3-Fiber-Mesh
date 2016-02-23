@@ -46,7 +46,7 @@
 		var TECLA = { ARRIBA:false, ABAJO:false, IZQUIERDA:false, DERECHA:false};
 
 		/* Modo de interaccion del usuario con el mouse*/
-		var MODE = { SKETCH:true, ROTATION:false,EXTRUSION:false };
+		var MODE = { SKETCH:true, ROTATION:false,EXTRUSION:false, PAINT:false  };
 		var geometry;
 		var linea;
 		/* Guarda los puntos del stroke principal */
@@ -228,7 +228,42 @@
 					drawStrokeLineWith2points([pFrom.X,pFrom.Y,0],[pTo.X,pTo.Y,0],stroke,escena);
 		 		}
 			}
+			
+			else if (MODE.PAINT){
+				x = ((e.clientX+getScrollX()-90)/ canvasWidth) * 2 - 1 ;
+		  		y = -((e.clientY+getScrollY()-70)/ canvasHeight) * 2 + 1 ;
 
+				var vector = new THREE.Vector3(x, y, 1);
+		  		vector.unproject(camara);
+		  		raycaster.set(camara.position, vector.sub(camara.position ).normalize());
+		  		var intersects = raycaster.intersectObjects(object3DSolid);
+
+		 		if(intersects.length>0){
+					//console.info('intersects 0: ', intersects[ 0 ]);
+				
+					var color=new THREE.Color( 0xffffff );
+					var geometry = new THREE.Geometry();
+					var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.FrontSide,shading: THREE.SmoothShading,wireframe: false, vertexColors: THREE.VertexColors});
+
+					intersects[ 0 ].object.material= Material;
+
+					var rgbColor = document.getElementById('foo').jscolor.rgb;					
+					hexColor = rgbToHex(Math.round(rgbColor[0]), Math.round(rgbColor[1]), Math.round(rgbColor[2]));					
+					
+					intersects[ 0 ].face.color.setHex(hexColor); 					
+					intersects[ 0 ].object.geometry.colorsNeedUpdate = true;
+		 		}
+		 		
+		 	}
+		}
+		
+		function componentToHex(c) {
+			var hex = c.toString(16);
+			return hex.length == 1 ? "0" + hex : hex;
+		}
+
+		function rgbToHex(r, g, b) {
+			return "0x" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 		}
 
 		function mouseUpEvent(x, y)
@@ -460,22 +495,25 @@
 		            TECLA.ABAJO=true;
 		            break;
 		        case 82://R modo Rotation
-		        	MODE = { SKETCH:false, ROTATION:true,EXTRUSSION:false  };
+		        	MODE = { SKETCH:false, ROTATION:true,EXTRUSSION:false, PAINT:false  };
 		        	document.getElementById("b1").style.color = "white";
 		        	document.getElementById("b2").style.color = "white";
 		        	document.getElementById("b3").style.color = "yellow";
 		       	 	break;
 		       	case 84://T modo Sketch
-		        	MODE = { SKETCH:true, ROTATION:false,EXTRUSSION:false  };
+		        	MODE = { SKETCH:true, ROTATION:false,EXTRUSSION:false, PAINT:false  };
 		        	document.getElementById("b1").style.color = "yellow";
 		        	document.getElementById("b2").style.color = "white";
 		        	document.getElementById("b3").style.color = "white";
 		       	 	break;
 		       	case 69://T modo Extrussion
-		        	MODE = { SKETCH:false, ROTATION:false,EXTRUSSION:true };
+		        	MODE = { SKETCH:false, ROTATION:false,EXTRUSSION:true, PAINT:false };
 		        	document.getElementById("b1").style.color = "white";
 		        	document.getElementById("b2").style.color = "yellow";
 		        	document.getElementById("b3").style.color = "white";
+					break;
+				case 80://R modo Paint
+		        	MODE = { SKETCH:false, ROTATION:false,EXTRUSSION:false, PAINT:true};
 
 		       	 	break;
 		    }
@@ -720,7 +758,7 @@
 				<button class="btn1 icon-help" onclick="popup()"></button>
 				<button class="btn1 icon-autorenew" onclick="clearCanvas()"></button>
 
-				<button class="btn1 icon-palette jscolor
+				<button  id="foo" class="btn1 icon-palette jscolor
 			    {valueElement:'valueSpan',styleElement:'styleSpan',value:'ff6699'}">
 			   	</button>
 
