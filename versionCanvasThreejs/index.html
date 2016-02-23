@@ -20,37 +20,44 @@
 	<link rel="stylesheet" type="text/css" href="mystyle.css">
 	<link rel="stylesheet" type="text/css" href="fonts/style.css">
 	<script type="text/javascript"> 
-		var escena,escena2;
-		var camara,camara2;
-		var render,render2;
-		var puntosbu, samplebu;
-		var malla=false;
 		
+		/* Escena */
+		var escena;
+		/* Camara */
+		var camara;
+		/* Render */
+		var render;
+		
+		var puntosbu, samplebu;
+		/* Ancho */
 		var canvasWidth = window.innerWidth - 100;
+		/* Alto */
 		var canvasHeight = window.innerHeight + 40;
 
-		
-
-		var lastTime;
+		var lastTime = Date.now();
+		/* Raycaster para la interseccion de puntos */
 		var raycaster;
-		
+		/* Flag para saber si se ha generado el anillo base */
 		var baseRingFlag = false;
+		/* Flag para poder dibujar en solido o en wired*/
+		var malla=false;
+
 		var TECLA = { ARRIBA:false, ABAJO:false, IZQUIERDA:false, DERECHA:false};
 
 		/* Modo de interaccion del usuario con el mouse*/
 		var MODE = { SKETCH:true, ROTATION:false,EXTRUSION:false };
-		/*var triangle;
-		var triangulo;
-		var cube;*/
-		/**/
 		var geometry;
 		var linea;
-		var puntos,baseRing=[],baseRingPoints=[],extrussionStroke=[],vax=0,spotLight2 ;
-		//var spotLight;
+		/* Guarda los puntos del stroke principal */
+		var puntos=[];
+		/* Guarda los puntos del anillo base */
+		var baseRing=[];
+
+		var extrussionStroke=[];
 		/* Contiene todas los objetos lineas para la graficacion en opengl del trazo generado por el usuario */
 		var stroke = [];
 		/* Contiene el objeto linea perteneciente al baseRing */
-		var baseRingStroke;//,baseRingStroke2;
+		var baseRingStroke;
 		/* Contiene la normal y centro del stroke*/
 		var baseRingNormalAndCenter;
 		/* Objeto poligono grafico webGl*/
@@ -66,94 +73,55 @@
 		/*si el mouse se encuentra presionado*/
 		var pressed = false;
 
-		function webGLStart() {
+		function webGLStart() 
+		{
 			
 			document.onselectstart = function() { return false; }
 			document.onmousedown = function() { return false; }
 			document.onkeydown=teclaPulsada;
     		document.onkeyup=teclaSoltada;
     		document.getElementById("b1").style.color = "yellow";
-			puntos = [];
-			init();
-			//renderEscena();
-			//renderEscena2();
-			pressed = false;
-			lastTime = Date.now();
+    		/* Inicializa la escena  */
+			initScene();
+			/* Anima la escena */
 			animarEscena();
-		}
-
-		function init(){
-			/* Inicializo las 2 escenas */
-			/*render = new THREE.WebGLRenderer();
-			render.setClearColor(0xECF8FA, 1);
-			render.setSize(canvasWidth, canvasHeight);
-			document.getElementById("myCanvas").appendChild(render.domElement);	*/	
-			var div = document.getElementById('myCanvas2');
-
-			render2 = new THREE.WebGLRenderer( { alpha: true } );
-			
-			render2.setSize(canvasWidth, canvasHeight);
-			div.appendChild(render2.domElement);		
-			initScene();  
-			raycaster = new THREE.Raycaster();
 		}
 
 		function initScene()
 		{	
+			var div = document.getElementById('myCanvas2');
+
+			render = new THREE.WebGLRenderer( { alpha: true } );
+			render.setSize(canvasWidth, canvasHeight);
 			
-			var spotLight = new THREE.DirectionalLight( 0xFFFFFF ,0.6);
-			var spotLight2 = new THREE.DirectionalLight( 0xFFFFFF  ,0.6 );
-			//var spotLight3 = new THREE.DirectionalLight( 0xFFFFFF ,0.5);
-			/*var spotLight4 = new THREE.SpotLight( 0x28323D );
-			var spotLight5 = new THREE.SpotLight( 0x28323D );
-			var spotLight6 = new THREE.SpotLight( 0x28323D );*/
+			var directionalLight = new THREE.DirectionalLight( 0xFFFFFF ,0.6);
+			var directionalLight2 = new THREE.DirectionalLight( 0xFFFFFF  ,0.6 );
+			var luzAmbiente = new THREE.AmbientLight(0x000000);	
+			directionalLight.position.set( 0,0,15000);
+			directionalLight2.position.set(0,1000,0);
 
-			//var spotLight3 = new THREE.SpotLight( 0xffffff );
+			escena = new THREE.Scene();
+			escena.add( directionalLight );
+			escena.add( directionalLight );
+			escena.add( luzAmbiente );
 
+			camara = new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 2000);
+			camara.position.set(0, 0, canvasHeight+100);
 
-			spotLight.position.set( 0,0,15000);
-			spotLight2.position.set(0,1000,0);
-			//spotLight3.position.set( 0,15000,0);
-			/*spotLight4.position.set( 0,0,-15000);
-			spotLight5.position.set( -15000,0,0);
-			spotLight6.position.set( 0,-15000,0);*/
+			camara.lookAt(escena.position);
+			escena.add(camara);
 
+			div.appendChild(render.domElement);
 
-			//var luzAmbiente = new THREE.AmbientLight(0xffffff);	
-			
-
-			escena2 = new THREE.Scene();
-			//var axis2 = new THREE.AxisHelper(500);
-			//escena2.add(axis2);
-			escena2.add( spotLight );
-			escena2.add( spotLight2 );
-			//escena2.add( spotLight3 );
-			/*escena2.add( spotLight4 );
-			escena2.add( spotLight5 );
-			escena2.add( spotLight6 );*/
-			//escena2.add( luzAmbiente );
-
-			camara2= new THREE.PerspectiveCamera(45, canvasWidth / canvasHeight, 0.1, 2000);
-			//camara.position.set(200, 200, 500);
-			camara2.position.set(0, 0, canvasHeight+100);
-			camara2.lookAt(escena2.position);
-
-
-
-			escena2.add(camara2);
-
-
+			raycaster = new THREE.Raycaster();
 		}
+
 
 		function renderEscena()
 		{
 			render.render(escena, camara);
 		}
-		function renderEscena2()
-		{
-			render2.render(escena2, camara2);
-		}
-
+		
 		function mouseDownEvent(e)
 		{	
 			var coordinates = getCoordinatesToRender(e);
@@ -178,23 +146,16 @@
 
 					x = (e.clientX-90 / canvasWidth) * 2 - 1  ;
 		  			y = -(e.clientY-70 / canvasHeight) * 2 + 1  ;
-					//console.info("",x,y)
+					
 					var vector = new THREE.Vector3(x, y, 1);
-		  			vector.unproject(camara2);
-		  			raycaster.set(camara2.position, vector.sub(camara2.position ).normalize());
+		  			vector.unproject(camara);
+		  			raycaster.set(camara.position, vector.sub(camara.position ).normalize());
 		  			var intersects = raycaster.intersectObjects(object3DSolid);
 		 			if(intersects.length>0){
-		 				//console.info("point",intersects[ 0 ].point);
 		 				var point = intersects[ 0 ].point;
 		 				baseRing.length = 1; 
 						baseRing[0] = point;
-		 			}
-
-		 			/*for ( var i = 0; i < intersects.length; i++ ) {
-						intersects[ 1 ].object.material.color.set( 0xff0000 );
-					}*/
-
-					
+		 			}	
 				}
 
 				/* Create the extrussion stroke*/
@@ -227,7 +188,7 @@
 				puntos.push(new Point(x, y));
 				var pFrom = puntos[puntos.length - 2];
 				var pTo = puntos[puntos.length - 1];
-				drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena2);
+				drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena);
 			}
 
 
@@ -247,27 +208,23 @@
 					x = ((e.clientX+getScrollX()-90)/ canvasWidth) * 2 - 1 ;
 		  			y = -((e.clientY+getScrollY()-70)/ canvasHeight) * 2 + 1 ;
 					var vector = new THREE.Vector3(x, y, 1);
-		  			vector.unproject(camara2);
-		  			raycaster.set(camara2.position, vector.sub(camara2.position ).normalize());
+		  			vector.unproject(camara);
+		  			raycaster.set(camara.position, vector.sub(camara.position ).normalize());
 		  			var intersects = raycaster.intersectObjects(object3DSolid);
 		 			if(intersects.length>0){
 		 				var point = intersects[ 0 ].point;
 						baseRing.push(point);
 						var pFrom = baseRing[baseRing.length - 2];
 						var pTo = baseRing[baseRing.length - 1];
-						drawStrokeLineWith2points([pFrom.x,pFrom.y,pFrom.z+5],[pTo.x,pTo.y,pTo.z+5],stroke,escena2);
-		 			}
-
-		 		
+						drawStrokeLineWith2points([pFrom.x,pFrom.y,pFrom.z+5],[pTo.x,pTo.y,pTo.z+5],stroke,escena);
+		 			}	
 		 		}
 
 		 		else{
 		 			extrussionStroke.push(new Point(x, y));
 					var pFrom = extrussionStroke[extrussionStroke.length - 2];
 					var pTo = extrussionStroke[extrussionStroke.length - 1];
-					//console.info(",",pFrom)
-					drawStrokeLineWith2points([pFrom.X,pFrom.Y,0],[pTo.X,pTo.Y,0],stroke,escena2);
-				
+					drawStrokeLineWith2points([pFrom.X,pFrom.Y,0],[pTo.X,pTo.Y,0],stroke,escena);
 		 		}
 			}
 
@@ -281,36 +238,29 @@
 
 			/* Genero el objeto en 3d */
 			if(MODE.SKETCH){
-				removeObject(stroke,escena2);
+				/*  Remuevo las lineas del stroke principal generado por el usuario */
+				removeObject(stroke,escena);
 				var sample = parseInt(puntos.length*10/100);
 				puntosbu = puntos;
 				samplebu = sample;
-				get3dObject(puntos,/*parseInt(puntos.length*0.2)*/sample,15);
+				/* Genero el objeto en 3d y lo agrego a una lista */
+				object3DSolid.push(get3dObject(puntos,sample,15,malla,escena,"rgb(255,255,255)"));
 
-				var resamplePoints = Resample(puntos,5);
-				console.info(" puntos ",puntos.length);
-				console.info(" puntos remuestreados ",resamplePoints.length);
-
-				for(var i = 1 ; i < resamplePoints.length; i++){
-					var pFrom = resamplePoints[i-1];
-					var pTo = resamplePoints[i];
-					//drawStrokeLineWith2points([pFrom.X,pFrom.Y,pFrom.Z],[pTo.X,pTo.Y,pTo.Z],stroke,escena2);
-				}
-				//getLines(resamplePoints);
+				/* Reinicio los puntos del stroke */
 				puntos = []
 			}
 			else if(MODE.EXTRUSSION){
 				if(!baseRingFlag){
 					baseRing.push(baseRing[0]);
 
-
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego en un objeto linea */
-					removeObject(stroke,escena2);
+					removeObject(stroke,escena);
 
 					/* Modifico la manera de representar los puntos */
-					baseRingPoints = baseRing.map(function(point){
+					baseRing = baseRing.map(function(point){
 						return [point.x,point.y,point.z];
 					});
+
 					var resampleRing = function(baseRing,resample){
 						var resamplePoints = [];
 						var points = baseRing.map(function(point){
@@ -342,79 +292,77 @@
 						return resamplePoints;
 					};
 
-					baseRingPoints = resampleRing(baseRingPoints,20);
+					baseRing = resampleRing(baseRing,20);
 
 					/* Dibujo el stroke en un objeto linea */
-					baseRingStroke = drawStrokeLine(baseRingPoints,escena2);
+					baseRingStroke = drawStrokeLine(baseRing,escena);
 
 					/* Cambio el estado de la bandera */
 					baseRingFlag = true;
 				}
 				else{
-					removeObject(stroke,escena2);
+					removeObject(stroke,escena);
 					extrussionStroke = Resample(extrussionStroke,17);
 					
 					/* Modifico la manera de representar los puntos */
 					var newextrussionStroke = extrussionStroke.map(function(point){
 						return [point.X,point.Y,0];
 					});
-					var projectedExtrussion = extrussion(baseRingPoints,baseRingStroke,newextrussionStroke,[0, 0, canvasHeight+100],stroke);
+					/* Genero el objeto extruido */
+					var object3Dextrussion = extrussion(baseRing,baseRingStroke,newextrussionStroke,[0, 0, canvasHeight+100],malla,escena,"rgb(255,255,255)");
+					object3DSolid.push(object3Dextrussion);
 
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
-					removeObject(baseRingStroke,escena2);
+					removeObject(baseRingStroke,escena);
 
-					console.info("projected",projectedExtrussion);
 					baseRingFlag = false;
 					baseRing.length=0;
-					stroke.push(drawStrokeLine(projectedExtrussion,escena2));
 				}
 			
 			}
 			
 		}
 
-		/* Genera el objeto en 3 dimensiones*/
-		function get3dObject(puntos,samplePoints1,samplePoints2){
+		/* Genera el objeto en 3 dimensiones, 
+			puntos: son los puntos del stroke a generar
+			samplePoints1: los puntos remuestrados del stroke principal
+			samplePoints2: los puntos remuestreados para los triangulos finales 
+		*/
+		function get3dObject(puntos,samplePoints1,samplePoints2,malla,escena,color){
 			
 			/* Genero el plano de triangulos haciendo uso la triangulacion de delauney */
 			var plane = delaunay_triangulation_usingPoly2tri(puntos,samplePoints1);
-			//plane = generateBasicTriangulation(polygon);
-			//basicPlaneWebGL = drawTriangles(plane,escena);
-
+			
 			/* Realizo la poda de triangulos para la elevacion */
 			var resultPlanePruning = pruning(plane);
-			//finalTrianglesWebGl = drawTriangles(resultPlanePruning,escena);
-
+			
 			/* Genero la espina del stroke para su elevacion */
 			var spine = generateSpine(resultPlanePruning);
 			
 			/* Realizo la triangulacion final */
 			finalTriangulation(resultPlanePruning,spine);
 			
-			/* Obtengo la lista de triangulos para la graficacion en la escena correspondiente  */	
-			//finalTrianglesWebGl = drawTriangles(resultPlanePruning,escena,false);
-
 			/* Realizo la triangulacion dandole la coordenada en Z */
 			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
 				
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
-			//object3DSolid = drawTriangles(object3DSolid,escena2,true);
-			//console.info(object3D.length)
-			object3DSolid.push(draw3dObject(object3D,escena2,malla,"rgb(255,255,255)"));
-			//MODE.ROTATION = true;MODE.SKETCH = false;
+			object3D = draw3dObject(object3D,escena,malla,color);
+			
+			return object3D;
+
 		}
 
 
 
 		function clearCanvas(){
 			/* Remuevo los puntos remuestreados */
-			removeObject(polygonWebGLResample, escena);
+			//removeObject(polygonWebGLResample, escena);
 			/* Remuevo el plano de triangulos de la triangulacion basica*/
-			removeObject(basicPlaneWebGL,escena);
+			//removeObject(basicPlaneWebGL,escena);
 			/* Remuevo el plano de triangulos finales*/
-			removeObject(finalTrianglesWebGl,escena);
+			//removeObject(finalTrianglesWebGl,escena);
 			/* Remuevo el plano de triangulos finales en 3d*/
-			removeObject(object3DSolid,escena2);
+			removeObject(object3DSolid,escena);
 		}
 
 		function buttonOnClick(){
@@ -441,7 +389,7 @@
 
 		function clear(){
 			initScene();
-			renderEscena2();
+			renderEscena();
 		}
 
 		function getScrollY()
@@ -463,33 +411,15 @@
 			return scrollX;
 		}
 
-		/*function drawStroke(from, to,puntos)
-		{	
-			var p1 = [puntos[from].X, puntos[from].Y,0];
-			var p2 = [puntos[to].X, puntos[to].Y,0];
-			drawStrokeLine(p1,p2,stroke,escena);
-			//srenderEscena();
-		}
-		function drawStroke2(from, to,puntos)
-		{	
-			var p1 = [puntos[from].x, puntos[from].y,puntos[from].z];
-			var p2 = [puntos[to].x, puntos[to].y,puntos[to].z];
-			//console.info(p1,p2)
-			drawStrokeLine(p1,p2,stroke,escena2);
-			//renderEscena2();
-		}*/
+		
 		function animarEscena()
 		{
 
 			var tiempo = (Date.now() - lastTime)/1000;//Divido porque esta en miliseg y lo quiero en segundos
 			if(tiempo > 0){
-				//vax = vax+10;
-				//spotLight2.position.set(0,vax,800);
-				//renderEscena();
-				renderEscena2();
+				renderEscena();
 			}
 			lastTime=Date.now();
-    		//requestAnimationFrame(animarEscena);
     		setTimeout(animarEscena,1000/24) //1.6 60 frames por segundo
 		}
 
@@ -537,10 +467,9 @@
 		        	document.getElementById("b3").style.color = "white";
 
 		       	 	break;
-
 		    }
-
 		}
+
 		function teclaSoltada(e)
 		{
 		    switch (e.keyCode)
@@ -581,10 +510,6 @@
 			if(baseRingStroke!=null){
 
 				baseRingStroke.quaternion.multiplyQuaternions(deltaRotationQuaternion, baseRingStroke.quaternion);
-				//baseRingStroke2.quaternion.multiplyQuaternions(deltaRotationQuaternion, baseRingStroke.quaternion);
-				
-				//applyTransformToItsGeometry(baseRingStroke);
-				//console.info(baseRingStroke.geometry.vertices[0]);
 			}
 		}
 
@@ -608,7 +533,7 @@
 
 			object.updateMatrix();
 
-			drawStrokeLineWith2points([b.x,b.y,b.z],[0,0,0],stroke,escena2);
+			drawStrokeLineWith2points([b.x,b.y,b.z],[0,0,0],stroke,escena);
 		}
 
 
@@ -656,17 +581,19 @@
 		function help(){
 			alert("I am an alert box!");
 		}
+
 		/* Get the vertices geometry from an object*/
 		function getVerticesObject(object){
 			console.info(object.geometry.vertices);
 			return object.geometry.vertices;
 		}
-		/* Obtiene las coordnadas referentes al render, recibiendo el evento touch*/
+
+		/* Obtiene las coordenadas referentes al render, recibiendo el evento touch*/
 		function getCoordinatesToRender(event)
 		{
 			var x = event.offsetX==undefined?event.layerX:event.offsetX;
 			var y = event.offsetY==undefined?event.layerY:event.offsetY;
-			//console.info("2",x,y);
+			
 			/* coordenadas referentes a la camara*/
 			x = x - (canvasWidth/2);
 			y = (canvasHeight/2) - y;
