@@ -42,6 +42,7 @@
 		/* Flag para poder dibujar en solido o en wired*/
 		var malla=false;
 
+		var color = "rgb(255,255,255)";
 		var TECLA = { ARRIBA:false, ABAJO:false, IZQUIERDA:false, DERECHA:false};
 
 		/* Modo de interaccion del usuario con el mouse*/
@@ -244,7 +245,7 @@
 				puntosbu = puntos;
 				samplebu = sample;
 				/* Genero el objeto en 3d y lo agrego a una lista */
-				object3DSolid.push(get3dObject(puntos,sample,15,malla,escena,"rgb(255,255,255)"));
+				object3DSolid.push(get3dObject(puntos,sample,15,malla,escena,color));
 
 				/* Reinicio los puntos del stroke */
 				puntos = []
@@ -311,7 +312,7 @@
 						return [point.X,point.Y,0];
 					});
 					/* Genero el objeto extruido */
-					var object3Dextrussion = extrussion(baseRing,baseRingStroke,newextrussionStroke,[0, 0, canvasHeight+100],malla,escena,"rgb(255,255,255)");
+					var object3Dextrussion = extrussion(baseRing,baseRingStroke,newextrussionStroke,[0, 0, canvasHeight+100],malla,escena,color);
 					object3DSolid.push(object3Dextrussion);
 
 					/* Retiro las lineas agregadas por separado del stroke generado, para unirlas luego un objeto linea */
