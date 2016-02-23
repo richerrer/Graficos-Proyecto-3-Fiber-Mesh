@@ -241,13 +241,14 @@
 		 		if(intersects.length>0){
 					//console.info('intersects 0: ', intersects[ 0 ]);
 				
-					var color=new THREE.Color( 0xffffff );
+					//var colora=new THREE.Color( 0xffffff );
 					var geometry = new THREE.Geometry();
 					var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.FrontSide,shading: THREE.SmoothShading,wireframe: false, vertexColors: THREE.VertexColors});
 
 					intersects[ 0 ].object.material= Material;
 
-					var rgbColor = document.getElementById('foo').jscolor.rgb;					
+					var rgbColor = document.getElementById('foo').jscolor.rgb;	
+					var rgbColor = color;					
 					hexColor = rgbToHex(Math.round(rgbColor[0]), Math.round(rgbColor[1]), Math.round(rgbColor[2]));					
 					
 					intersects[ 0 ].face.color.setHex(hexColor); 					
@@ -402,6 +403,12 @@
 			/* Remuevo el plano de triangulos finales en 3d*/
 			removeObject(object3DSolid,escena);
 		}
+
+		function clearLast(){
+			removeObject(object3DSolid.pop(),escena);
+
+		}
+
 
 		function buttonOnClick(){
 			clearCanvas();
@@ -668,6 +675,19 @@
 			document.getElementById('fade2').style.display='block';
 		}
 
+		function setColor(picker) {
+		color = "rgb("+hexToRgb(picker)+")"
+		}
+
+		function hexToRgb(hex) {
+		    var bigint = parseInt(hex, 16);
+		    var r = (bigint >> 16) & 255;
+		    var g = (bigint >> 8) & 255;
+		    var b = bigint & 255;
+		    return r + "," + g + "," + b;
+		}
+
+
 	</script>
 </head>
 
@@ -682,7 +702,7 @@
 	 	   </tr>
 	 	   <tr>
 	 	   	<td valign="center" align="center" width="20%"> <span class="icon-palette"></span> </td>
-	 	  	<td valign="center" align="center" width="80%"> Paleta de colores para pintar el modelo 3D </td>
+	 	  	<td valign="center" align="center" width="80%"> Paleta de colores para pintar el modelo 3D BOTON P </td>
 	 	   </tr>
 	 	   <tr>
 	 	   	<td valign="center" align="center" width="20%"> <span class="b3 icon-visibility"></span> </td>
@@ -746,20 +766,25 @@
 
 <table id="window" border="3" height="100%" width="100%" cellspacing="0">
 	<tr id="fil1">
-		<td valign="top" width="100%" colspan="2">
+		<td valign="top" width="20%">
+		<button id="topbtn" class="btn1 icon-help" onclick="popup()"></button>
+		</td>
+		<td valign="top" width="80%">
 			<div id="myCanvas1" >	
+				
 				Blowie 1.0
 			</div>
 		</td>
+
 	</tr>
 	<tr id="fil2">
 		<td id="col1" valign="top" width="20%">
 			<div id="myCanvas3" >
-				<button class="btn1 icon-help" onclick="popup()"></button>
+				
 				<button class="btn1 icon-autorenew" onclick="clearCanvas()"></button>
-
-				<button  id="foo" class="btn1 icon-palette jscolor
-			    {valueElement:'valueSpan',styleElement:'styleSpan',value:'ff6699'}">
+				<button class="btn1 icon-undo" onclick="clearLast()"></button>
+				<button class="btn1 icon-palette jscolor
+			    {valueElement:'valueSpan',styleElement:'styleSpan',value:'ff6699', onFineChange:'setColor(this)'}">
 			   	</button>
 
 				<button class="btn1 icon-visibility" onclick="changeView()" ></button>
