@@ -27,8 +27,6 @@
 		var camara;
 		/* Render */
 		var render;
-
-		var touchX,touchY;
 		
 		var puntosbu, samplebu;
 		/* Ancho */
@@ -76,8 +74,6 @@
 		/*si el mouse se encuentra presionado*/
 		var pressed = false;
 
-		var strDownloadMime = "image/octet-stream";
-
 		function webGLStart() 
 		{
 			
@@ -86,17 +82,6 @@
 			document.onkeydown=teclaPulsada;
     		document.onkeyup=teclaSoltada;
     		document.getElementById("b1").style.color = "yellow";
-
-			/*var el = document.getElementsByTagName("window")[0];
-			el.addEventListener("touchstart", handleStart, false);
-			el.addEventListener("touchleave", handleLeave, false);
-			el.addEventListener("touchmove", handleMove, false);*/
-
-			window.addEventListener("touchstart", handleStart, false);
-			window.addEventListener("touchleave", handleLeave, false);
-			window.addEventListener("touchmove", handleMove, false);
-
-
     		/* Inicializa la escena  */
 			initScene();
 			/* Anima la escena */
@@ -107,7 +92,7 @@
 		{	
 			var div = document.getElementById('myCanvas2');
 
-			render = new THREE.WebGLRenderer( { preserveDrawingBuffer:true , alpha: true } );
+			render = new THREE.WebGLRenderer( { alpha: true } );
 			render.setSize(canvasWidth, canvasHeight);
 			
 			var directionalLight = new THREE.DirectionalLight( 0xFFFFFF ,0.6);
@@ -140,51 +125,6 @@
 		
 		function mouseDownEvent(e)
 		{	
-			touch(e);
-		}
-
-		function mouseMoveEvent(e)
-		{	
-			move(e);
-		}
-
-		function mouseUpEvent(x,y)
-		{	
-			release(x, y);			
-		}
-
-	    function handleStart(e) {
-	        getTouchPos(e);
-	        touch(touchX,touchY);
-	        event.preventDefault();
-	    }
-
-	    function handleMove(e) { 
-	        getTouchPos(e);
-	        move(touchX,touchY);
-	        event.preventDefault();
-	    }
-
-	    function handleLeave(e){
-	    	getTouchPos(e);
-	        release(touchX,touchY);
-	        event.preventDefault();
-	    }
-
-	    function getTouchPos(e) {
-	        if (!e)
-	            var e = event;
-
-	        if (e.touches) {
-	            if (e.touches.length == 1) { // Only deal with one finger
-	                var touch = e.touches[0]; // Get the information for finger #1
-	                touchX=touch.pageX-touch.target.offsetLeft;
-	                touchY=touch.pageY-touch.target.offsetTop;
-	            }
-	        }
-	    }
-
-		function touch(e){
 			var coordinates = getCoordinatesToRender(e);
 			
 			pressed = true;
@@ -227,7 +167,8 @@
 			}
 		}
 
-		function move(e){
+		function mouseMoveEvent(e)
+		{	
 			/* La distancia entre el punto previo y el actual*/
 			//var deltaMove = {x: e.offsetX-previousMousePosition.x,y: e.offsetY-previousMousePosition.y};
     		//previousMousePosition = {x: e.offsetX,y: e.offsetY};
@@ -300,14 +241,14 @@
 		 		if(intersects.length>0){
 					//console.info('intersects 0: ', intersects[ 0 ]);
 				
-					//var colora=new THREE.Color( 0xffffff );
+					var color =new THREE.Color( 0xffffff );
 					var geometry = new THREE.Geometry();
 					var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.FrontSide,shading: THREE.SmoothShading,wireframe: false, vertexColors: THREE.VertexColors});
 
 					intersects[ 0 ].object.material= Material;
 
 					var rgbColor = document.getElementById('foo').jscolor.rgb;	
-					var rgbColor = color;					
+					//var rgbColor = color;					
 					hexColor = rgbToHex(Math.round(rgbColor[0]), Math.round(rgbColor[1]), Math.round(rgbColor[2]));					
 					
 					intersects[ 0 ].face.color.setHex(hexColor); 					
@@ -316,9 +257,11 @@
 		 		
 		 	}
 		}
+		
+		
 
-	
-		function release(x,y){
+		function mouseUpEvent(x, y)
+		{	
 			if (!pressed)
 				return
 			pressed=false;
@@ -327,11 +270,11 @@
 			if(MODE.SKETCH){
 				/*  Remuevo las lineas del stroke principal generado por el usuario */
 				removeObject(stroke,escena);
-				var sample = parseInt(puntos.length*10/100);
+				var sample = parseInt(puntos.l*10/100);
 				puntosbu = puntos;
 				samplebu = sample;
 				/* Genero el objeto en 3d y lo agrego a una lista */
-				object3DSolid.push(get3dObject(puntos,sample,15,malla,escena,color));
+				object3DSolid.push(get3dObject(puntos,30,15,malla,escena,color));
 
 				/* Reinicio los puntos del stroke */
 				puntos = []
@@ -409,8 +352,8 @@
 				}
 			
 			}
+			
 		}
-
 
 
 		function componentToHex(c) {
@@ -421,8 +364,6 @@
 		function rgbToHex(r, g, b) {
 			return "0x" + componentToHex(r) + componentToHex(g) + componentToHex(b);
 		}
-
-
 		/* Genera el objeto en 3 dimensiones, 
 			puntos: son los puntos del stroke a generar
 			samplePoints1: los puntos remuestrados del stroke principal
@@ -740,35 +681,6 @@
 		color = "rgb("+hexToRgb(picker)+")"
 		}
 
-		function save(){
-			var imgData,imgNode;
-			try{
-				alert("guardando imagen");
-				var strMime = "image/jpeg";
-				imgData = render.domElement.toDataURL(strMime);
-				saveFile(imgData.replace(strMime,strDownloadMime),"image.jpg");
-			}
-			catch(e){
-				console.log(e);
-				return;
-			}
-			
-		}
-
-		var saveFile = function (strData, filename){
-			var link = document.createElement('a');
-			if(typeof link.download == 'string'){
-				document.body.appendChild(link);
-				link.download = filename;
-				link.href = strData;
-				link.click();
-				document.body.removeChild(link);}
-			else{
-				location.replace(uri);
-			}
-			
-		}
-
 		function hexToRgb(hex) {
 		    var bigint = parseInt(hex, 16);
 		    var r = (bigint >> 16) & 255;
@@ -873,12 +785,11 @@
 				
 				<button class="btn1 icon-autorenew" onclick="clearCanvas()"></button>
 				<button class="btn1 icon-undo" onclick="clearLast()"></button>
-				<button class="btn1 icon-palette jscolor
+				<button id="foo" class="btn1 icon-palette jscolor
 			    {valueElement:'valueSpan',styleElement:'styleSpan',value:'ff6699', onFineChange:'setColor(this)'}">
 			   	</button>
 
 				<button class="btn1 icon-visibility" onclick="changeView()" ></button>
-				<button class="btn1 icon-save" onclick="save()" ></button>
 				<hr width=100%>
 				<button id="b1" class="btn1 icon-mode_edit"></button>
 				<button id="b2" class="btn1 icon-border_color"></button>
