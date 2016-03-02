@@ -13,8 +13,8 @@ function generate3dObject(spine,triangles,samples){
 	var nTriangles = manageTriangles(spineVertex,triangles);
 
 	/* Mapa con los vertices de cada edge junto con su elevacion*/
-	//var spineHeight = getDistanceForSpineVertex2(spineVertex,triangles);
-	var spineHeight = getDistanceForSpineVertex(spineVertex,nTriangles);
+	var spineHeight = getDistanceForSpineVertex2(spineVertex,triangles);
+	//var spineHeight = getDistanceForSpineVertex(spineVertex,nTriangles);
 	//console.info("altura",spineHeight)
 	for(var i = 0; i< nTriangles.length;i++){
 		var t = nTriangles[i];
@@ -161,26 +161,49 @@ function getDistanceForSpineVertex2(spineVertex,triangles){
 		/* Numero de vertices externos */
 		var num = 0;
 		
+		/* Vertices externos a la espina*/
+		var externVertex = [];
+		
+		var distancesVector = [];
 		for(var j = 0; j< triangles.length;j++){
 			var t = triangles[j];
 			for(var l =0; l< t.edges.length;l++)
 			{
 				var edge = t.edges[l];
-				if(edge.vertexO == spineV && spineVertex.indexOf(edge.vertexD)==-1){
+				//console.info("n",t.edges.length)
+				if(edge == null)
+					break
+				if(edge.vertexO == spineV && spineVertex.indexOf(edge.vertexD)==-1 && externVertex.indexOf(edge.vertexD)==-1){
+					externVertex.push(edge.vertexD);
+					distancesVector.push(edge.vertexD.distance(spineV));
 					distance = distance + edge.vertexD.distance(spineV);
 					num++;
 				}
-				else if(edge.vertexD == spineV && spineVertex.indexOf(edge.vertexO)==-1){
+				else if (edge.vertexD == spineV && spineVertex.indexOf(edge.vertexO)==-1 && externVertex.indexOf(edge.vertexO)==-1){
+					externVertex.push(edge.vertexO);
+					distancesVector.push(edge.vertexO.distance(spineV));
 					distance = distance + edge.vertexO.distance(spineV);
 					num++;
 				}
 			}
 
 		}
-		//console.info("vertice espina 2 forma",i," elevacion",distance/num," verices externos ",num)
-		mapSpineHeight.set(spineV,(distance/num));
+		var value = distance/num;
+		if(num==2){
+			value = value+10;
+		}
+		/*if(num>=5){
+			value = value+50;
+		}*/
+		if(num>3){
+			distancesVector.sort(function(a, b){return -(a-b)});
+			//console.info("Cambiar",num,distancesVector);
+			//value = (distancesVector[0]);
+		}
+		//console.info("vertice espina 2.1 forma",i," elevacion",value," verices externos ",num)
+		mapSpineHeight.set(spineV,value);
 	}
-
+	//console.info("t",triangles.length);
 	return mapSpineHeight;
 }
 
@@ -257,8 +280,8 @@ function getZvalueInTriangle(v1,v2,v3,heigh,type,samples){
 	var rise1;
 	var sewEdgesPoints1;
 	var sewEdgesPoints2;
-	rise1 = 50;
-	rise2 = 50;
+	rise1 = 200;
+	rise2 = 200;
 	var value = 1;
 	/* v1 y v2 forman parte de la espina*/
 	if(type == 1)
@@ -329,6 +352,30 @@ function getZvalue2(v1,v2,rise,sample){
 	return vertexPoints;
 }
 
+/*function getZvalue4(v1,v2,rise,sample){
+	
+	var points = resamplePoints2(v1,v2,sample);
+	var vertexPoints = points.resamplePointsVector;//Contiene los puntos del vertice
+	var distances = points.distancesVector;//Contiene las distancias de todos los vertexPOints al primer vertice
+	
+	var a = v1.distance(v2);
+	var b = rise;
+
+	if(vertexPoints.length == distances.length){
+		for(var i = 0; i < distances.length; i++){
+			var L = distances[i];
+			var z = b*(Math.sqrt(1-((L*L)/(a*a)))); //Ecuacion de la elipse
+			//var z = Math.abs(a-L);
+			//console.info("DISTANCE",z);
+			//var z = b*(Math.sqrt(1-((value*value)/(a*a)))); //Ecuacion de la elipse
+			vertexPoints[i].Z = z;//Asigno el valor de Z
+			//console.info("rises:",b,"distances",a);
+			//console.info(z);
+		}	
+	}
+	return vertexPoints;
+}
+*/
 function getZvalue3(v1,v2,rise,sample){
 	
 	/* Numero de muestras a evaluar en Z */

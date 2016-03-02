@@ -179,6 +179,22 @@ function newTriangleSolidWebGl(triangle){
 
 /* Genera el mesh dado una lista de triangulos */
 function generateMesh3dObject(triangles,solid,color){
+
+	/*var json = [];
+	triangles.forEach(function(triangle,index,array){
+		var identedText = JSON.stringify(triangle);
+		json.push(identedText);
+	});
+
+	triangles = [];
+	json.forEach(function(js,index,array){
+		var newObject = JSON.parse(js);
+		triangles.push(newObject);
+	});
+	//var identedText = JSON.stringify(triangles[0],null,4);
+	//console.info("json",identedText);
+	//var newObject = JSON.parse(identedText);
+	console.info("parse",triangles);*/
 	var geometry = new THREE.Geometry();
 	//var Material=new THREE.MeshLambertMaterial({color:color,side:THREE.DoubleSide,shading:THREE.FlatShading,wireframe: solid});
 	var Material=new THREE.MeshPhongMaterial({color:color,side:THREE.DoubleSide,wireframe: solid,/*shading:THREE.FlatShading*/});

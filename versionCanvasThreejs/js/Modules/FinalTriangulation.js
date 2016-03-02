@@ -1,6 +1,6 @@
 function finalTriangulation(plano,spine){
 	var vertexDividedForST = getSubDividedPointsSpineForSTriangle(spine);
-	
+	var lastVertex = null;
 	for(var i = 0; i< spine.edges.length;i++){
 
 		/* La espina es resultado de un triangulo J si 2 aristas fueron eliminadas si :
@@ -51,8 +51,10 @@ function finalTriangulation(plano,spine){
 			var planeEdges = spine.planeEdges[i];
 
 			//newTfromSTriangle(edges,vertex,planeEdges,plano);
-			newTfromSTriangle2(edges,vertex,planeEdges,plano,vertexDividedForST);
-			
+			newTfromSTriangle3(edges,vertex,planeEdges,plano);
+			//newTfromSTriangle2(edges,vertex,planeEdges,plano,vertexDividedForST);
+			//newTfromSTriangle4(edges,vertex,planeEdges,plano,lastVertex);
+			lastVertex = vertex[1];
 		}
 	}
 
@@ -304,6 +306,194 @@ function newTfromSTriangle2(edges,vertex,planeEdges,plano,spineVertexDivided){
 	removeTriangleByEdges(plano,planeEdges[0],planeEdges[1]);
 }
 
+/* Retorna los nuevos triangulos producto de la espina y triangulos tipo S*/
+function newTfromSTriangle3(edges,vertex,planeEdges,plano){
+	
+
+	var e = edges[0];
+	var v1 = vertex[0];
+	var v2 = vertex[1];
+	
+	var v3 = null;
+	var v4 = null;
+	/* Obtengo los vertices de los planeEdges en donde el primer
+	 * vertice es el vertice comun de los 2 edges
+	 */
+	var vertex = getVertexInCommon(planeEdges[0],planeEdges[1]);
+	
+	if(planeEdges[0].vertexD != vertex[0])
+		v3 = planeEdges[0].vertexD;
+	else
+		v3 = planeEdges[0].vertexO;
+	if(planeEdges[1].vertexD != vertex[0])
+		v4 = planeEdges[1].vertexD;
+	else
+		v4 = planeEdges[1].vertexO;	
+		
+	v1 = planeEdges[0].getMidPoint();
+	v2 = planeEdges[1].getMidPoint();
+	
+	var e1 = new Edge(vertex[0],v1,4);
+	var e2 = new Edge(vertex[0],v2,4);
+	var e3 = new Edge(v2,v4,4);
+	var e4 = new Edge(v4,v1,4);
+	var e5 = new Edge(v4,v3,4);
+	var e6 = new Edge(v1,v3,4);
+	
+	var e7 = new Edge(v2,v3,4);
+	var triangle = new Triangle(vertex[0],v1,v2,[e1,e2,e]);
+	//triangle.draw(triangle,canvas_context);
+	plano.push(triangle);
+	
+	
+	var anglesT1 = getAnglesByVertex(v4,v1,v2);
+	var anglesT2 = getAnglesByVertex(v1,v3,v4);
+	var anglesT1New = getAnglesByVertex(v2,v3,v1);
+	var anglesT2New = getAnglesByVertex(v2,v3,v4);
+	
+	var a1 = anglesT1[0];
+	var b1 = anglesT1[1];
+	var c1 = anglesT1[2];
+
+	var a2 = anglesT2[0];
+	var b2 = anglesT2[1];
+	var c2 = anglesT2[2];
+
+	var a11 = anglesT1New[0];
+	var b11 = anglesT1New[1];
+	var c11 = anglesT1New[2];
+
+	var a22 = anglesT2New[0];
+	var b22 = anglesT2New[1];
+	var c22 = anglesT2New[2];
+	if( 1==1){
+		var triangle = new Triangle(v4,v1,v2,[e3,e4,e]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		var triangle = new Triangle(v4,v3,v1,[e5,e6,e4]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		removeTriangleByEdges(plano,planeEdges[0],planeEdges[1]);
+
+	}
+	else{
+		var triangle = new Triangle(v2,v3,v1,[e7,e6,e]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		var triangle = new Triangle(v4,v3,v2,[e5,e3,e7]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		removeTriangleByEdges(plano,planeEdges[0],planeEdges[1]);
+		console.info("es ilegal");
+	}
+}
+
+/* Retorna los nuevos triangulos producto de la espina y triangulos tipo S*/
+function newTfromSTriangle4(edges,vertex,planeEdges,plano,lastVertex){
+	
+
+	var e = edges[0];
+	var v1 = vertex[0];
+	var v2 = vertex[1];
+	if(v2 == lastVertex){
+		var tmp = v1;
+		v1 = lastVertex;
+		v2 = tmp;
+	}
+	console.info(v1,v2)
+	var v3 = null;
+	var v4 = null;
+	/* Obtengo los vertices de los planeEdges en donde el primer
+	 * vertice es el vertice comun de los 2 edges
+	 */
+	var vertex = getVertexInCommon(planeEdges[0],planeEdges[1]);
+	var edgev1 = null;
+	var edgev2 = null;
+	if(planeEdges[0].getMidPoint()==v1){
+		edgev1 = planeEdges[0];
+		edgev2 = planeEdges[1];
+	}
+	else if(planeEdges[0].getMidPoint()==v2){
+		edgev1 = planeEdges[1];
+		edgev2 = planeEdges[0];
+	}
+	else{
+		console.info("ERROR",planeEdges[0].getMidPoint(),planeEdges[1].getMidPoint(),v1,v2)
+	}
+	if(edgev1.vertexD != vertex[0])
+		v3 = edgev1.vertexD;
+	else
+		v3 = edgev1.vertexO;
+	if(edgev2.vertexD != vertex[0])
+		v4 = edgev2.vertexD;
+	else
+		v4 = edgev2.vertexO;	
+		
+	//v1 = planeEdges[0].getMidPoint();
+	//v2 = planeEdges[1].getMidPoint();
+	
+	var e1 = new Edge(vertex[0],v1,4);
+	var e2 = new Edge(vertex[0],v2,4);
+	var e3 = new Edge(v2,v4,4);
+	var e4 = new Edge(v4,v1,4);
+	var e5 = new Edge(v4,v3,4);
+	var e6 = new Edge(v1,v3,4);
+	
+	var e7 = new Edge(v2,v3,4);
+	var triangle = new Triangle(vertex[0],v1,v2,[e1,e2,e]);
+	//triangle.draw(triangle,canvas_context);
+	plano.push(triangle);
+	
+	
+	var anglesT1 = getAnglesByVertex(v4,v1,v2);
+	var anglesT2 = getAnglesByVertex(v1,v3,v4);
+	var anglesT1New = getAnglesByVertex(v2,v3,v1);
+	var anglesT2New = getAnglesByVertex(v2,v3,v4);
+	
+	var a1 = anglesT1[0];
+	var b1 = anglesT1[1];
+	var c1 = anglesT1[2];
+
+	var a2 = anglesT2[0];
+	var b2 = anglesT2[1];
+	var c2 = anglesT2[2];
+
+	var a11 = anglesT1New[0];
+	var b11 = anglesT1New[1];
+	var c11 = anglesT1New[2];
+
+	var a22 = anglesT2New[0];
+	var b22 = anglesT2New[1];
+	var c22 = anglesT2New[2];
+	if(1==1 ){//((min(a1,b1,c1)>= min(a11,b11,c11)) || (min(a2,b2,c2) >= min(a22,b22,c22)))
+		var triangle = new Triangle(v4,v1,v2,[e3,e4,e]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		var triangle = new Triangle(v4,v3,v1,[e5,e6,e4]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		removeTriangleByEdges(plano,planeEdges[0],planeEdges[1]);
+
+	}
+	else{
+		var triangle = new Triangle(v2,v3,v1,[e7,e6,e]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		var triangle = new Triangle(v4,v3,v2,[e5,e3,e7]);
+		//triangle.draw(triangle,canvas_context);
+		plano.push(triangle);
+
+		removeTriangleByEdges(plano,planeEdges[0],planeEdges[1]);
+		console.info("es ilegal");
+	}
+}
 
 /* Retorna los nuevos triangulos producto de la espina y triangulos tipo S*/
 function newTfromSTriangle(edges,vertex,planeEdges,plano){

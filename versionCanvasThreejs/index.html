@@ -17,6 +17,7 @@
 	<script type="text/javascript" src="js/Modules/DrawWebGl.js"></script>
 	<script type="text/javascript" src="js/Modules/Extrussion.js"></script>
 	<script type="text/javascript" src="js/jscolor.js"></script>
+	<script type="text/javascript" src="js/json2.js"></script>
 	<link rel="stylesheet" type="text/css" href="mystyle.css">
 	<link rel="stylesheet" type="text/css" href="fonts/style.css">
 	<script type="text/javascript"> 
@@ -78,6 +79,8 @@
 
 		var strDownloadMime = "image/octet-stream";
 
+		var savedObject = [];
+
 		function webGLStart() 
 		{
 			
@@ -86,15 +89,23 @@
 			document.onkeydown=teclaPulsada;
     		document.onkeyup=teclaSoltada;
     		document.getElementById("b1").style.color = "yellow";
-
-			/*var el = document.getElementsByTagName("window")[0];
+/*
+			var el = document.getElementById("myCanvas2");
 			el.addEventListener("touchstart", handleStart, false);
 			el.addEventListener("touchleave", handleLeave, false);
 			el.addEventListener("touchmove", handleMove, false);*/
+/*
+			var d1 = document.getElementById("myCanvas2); 
+		["mouseup","mousedown","mouseout","click","dblclick","touchstart","touchend",
+         "touchleave","touchmove","touchcancel"].forEach(function(te) {
+   		  d1.addEventListener(te, evt_lstr);
+ 		});*/
 
-			window.addEventListener("touchstart", handleStart, false);
+
+
+			/*window.addEventListener("touchstart", handleStart, false);
 			window.addEventListener("touchleave", handleLeave, false);
-			window.addEventListener("touchmove", handleMove, false);
+			window.addEventListener("touchmove", handleMove, false);*/
 
 
     		/* Inicializa la escena  */
@@ -102,6 +113,13 @@
 			/* Anima la escena */
 			animarEscena();
 		}
+
+		/*function evt_lstr(e) {
+		    var div = document.createElement("div"), date = new Date();
+		    div.innerHTML = date.getHours() + ":" + ("0" + date.getMinutes()).slice(-2) + ":"
+		            + ("0" + date.getSeconds()).slice(-2) + "." + ("00" + date.getMilliseconds()).slice(-3) + " " + e.type;
+		    d2.appendChild(div);
+		}*/
 
 		function initScene()
 		{	
@@ -331,8 +349,11 @@
 				puntosbu = puntos;
 				samplebu = sample;
 				/* Genero el objeto en 3d y lo agrego a una lista */
-				object3DSolid.push(get3dObject(puntos,sample,15,malla,escena,color));
-
+				object3DSolid.push(get3dObject(puntos,sample,5,malla,escena,color));
+				console.info("parse",object3DSolid[0]);
+				//var identedText = JSON.stringify(object3DSolid[0]);
+				//var newObject = JSON.parse(identedText);
+				//console.info("parse",identedText);
 				/* Reinicio los puntos del stroke */
 				puntos = []
 
@@ -444,7 +465,7 @@
 			
 			/* Realizo la triangulacion dandole la coordenada en Z */
 			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
-				
+			//saveObject(object3D)
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
 			object3D = draw3dObject(object3D,escena,malla,color);
 			
@@ -452,7 +473,34 @@
 
 		}
 
+		function saveObject(triangles){
+			var json = [];
+			triangles.forEach(function(triangle,index,array){
+				var identedText = JSON.stringify(triangle);
+				json.push(identedText);
+			});
+			/* AQUI SE DEBE DE ESCRIBIR EN EL ARCHIVO DE TEXTO */
+			console.info(json)
+			//var fso  = new ActiveXObject("Scripting.FileSystemObject"); 
+			var triangles2 = [];
+			json.forEach(function(js,index,array){
+				var newObject = JSON.parse(js);
+				triangles2.push(newObject);
+			});
+			draw3dObject(triangles2,escena,false,"rgb(255,255,255)");
+		}
 
+		function loadObject(){
+			/* Leer del archivo y guardarlo en un array json */
+			var json = [];
+			var triangles = [];
+
+			json.forEach(function(js,index,array){
+				var newObject = JSON.parse(js);
+				triangles.push(newObject);
+			});
+			var object3D = draw3dObject(triangles,escena,malla,color);
+		}
 
 		function clearCanvas(){
 			/* Remuevo los puntos remuestreados */
