@@ -77,6 +77,8 @@
 		/*si el mouse se encuentra presionado*/
 		var pressed = false;
 
+		var model, model1;
+
 		var strDownloadMime = "image/octet-stream";
 
 		var savedObject = [];
@@ -465,7 +467,10 @@
 			
 			/* Realizo la triangulacion dandole la coordenada en Z */
 			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
-			//saveObject(object3D)
+			model = object3D;
+			//var tempDir = System.getTempDirectory();
+	
+			//saveObject(object3D);
 			/* Obtengo la lista de triangulos webGl para dibujarlos en la escena */
 			object3D = draw3dObject(object3D,escena,malla,color);
 			
@@ -473,33 +478,86 @@
 
 		}
 
-		function saveObject(triangles){
+		function saveModel(){
+			var triangles = model;
 			var json = [];
+			var temp;
 			triangles.forEach(function(triangle,index,array){
 				var identedText = JSON.stringify(triangle);
+				temp = identedText;
 				json.push(identedText);
 			});
-			/* AQUI SE DEBE DE ESCRIBIR EN EL ARCHIVO DE TEXTO */
-			console.info(json)
-			//var fso  = new ActiveXObject("Scripting.FileSystemObject"); 
-			var triangles2 = [];
-			json.forEach(function(js,index,array){
-				var newObject = JSON.parse(js);
-				triangles2.push(newObject);
-			});
-			draw3dObject(triangles2,escena,false,"rgb(255,255,255)");
+
+		    var textToWrite = json;
+			var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
+			var fileNameToSaveAs = "model.txt";
+
+			var downloadLink = document.createElement("a");
+			downloadLink.download = fileNameToSaveAs;
+			downloadLink.innerHTML = "Download File";
+
+			if (window.webkitURL != null)
+			{	// Chrome allows the link to be clicked without actually adding it to the DOM.
+				downloadLink.href = window.webkitURL.createObjectURL(textFileAsBlob);
+			}
+			else
+			{	// Firefox requires the link to be added to the DOM before it can be clicked.
+				downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
+				downloadLink.onclick = destroyClickedElement;
+				downloadLink.style.display = "none";
+				document.body.appendChild(downloadLink);
+			}
+
+			downloadLink.click();
+	 			/*var triangles2 = [];
+				json.forEach(function(js,index,array){
+					var newObject = JSON.parse(js);
+					triangles2.push(newObject);
+				});
+				draw3dObject(triangles2,escena,false,"rgb(255,255,255)");*/
 		}
 
-		function loadObject(){
-			/* Leer del archivo y guardarlo en un array json */
+		function destroyClickedElement(event)
+		{
+			document.body.removeChild(event.target);
+		}
+
+		function loadModel(){
+
 			var json = [];
 			var triangles = [];
 
-			json.forEach(function(js,index,array){
+			var fileToLoad = document.getElementById("fileToLoad").files[0];
+			//console.info("el archivo es ",fileToLoad);
+			var fileReader = new FileReader();
+
+			//alert("Modelo cargado");
+			document.getElementById('light4').style.display='none';
+      		document.getElementById('fade4').style.display='none'
+			clearCanvas();
+			fileReader.onload = function(fileLoadedEvent) 
+			{
+				var textFromFileLoaded = fileLoadedEvent.target.result;
+
+				json = textFromFileLoaded;
+				console.info("el string del modelo es ",json);
+				//json es todo el archivo de entrada en una sola cadena de texto
+
+				//json no es un arreglo por tanto no se puede iterar
+				//se debe pasar a un arreglo con un "tokenizer" y dividir cada string que no se de donde a donde va
+				//ni cual es el formato
+				json.forEach(function(js,index,array){
+				
 				var newObject = JSON.parse(js);
 				triangles.push(newObject);
-			});
+				});
+
+			};
+
+			fileReader.readAsText(fileToLoad, "UTF-8");
+
 			var object3D = draw3dObject(triangles,escena,malla,color);
+
 		}
 
 		function clearCanvas(){
@@ -788,7 +846,20 @@
 		color = "rgb("+hexToRgb(picker)+")"
 		}
 
+
+		function decideSave(){
+			document.getElementById('light3').style.display='block';
+			document.getElementById('fade3').style.display='block';
+		}
+
+		function decideLoad(){
+			document.getElementById('light4').style.display='block';
+			document.getElementById('fade4').style.display='block';
+		}
+
 		function save(){
+
+
 			var imgData,imgNode;
 			try{
 				alert("guardando imagen");
@@ -862,10 +933,13 @@
 
        <a href = "javascript:void(0)" 
        onclick = "document.getElementById('light').style.display='none';
-       document.getElementById('fade').style.display='none'">Close</a>
+       document.getElementById('fade').style.display='none'">close</a>
 
  </div>
  <div id="fade" class="black_overlay"></div>
+
+
+
 
 <div id="light2" class="white_content"> 
  	   <H2 style="text-align:center; margin-top:0px;">Informacion</H2>
@@ -897,10 +971,46 @@
 
        <a href = "javascript:void(0)" 
        onclick = "document.getElementById('light2').style.display='none';
-       document.getElementById('fade2').style.display='none'">Close</a>
+       document.getElementById('fade2').style.display='none'">close</a>
 
  </div>
  <div id="fade2" class="black_overlay"></div>
+
+ <div id="light3" class="white_content2"> 
+ 	   <H2 style="text-align:center; margin-top:0px;">Que desea guardar ?</H2>
+ 	   <table border="0" align="center" width="90%" height="15%">
+	 	   <tr>	 	   	
+	 	   	<td valign="center" align="center" width="50%" >
+	 	   		<button onclick="save()">Imagen</button> </td>
+	 	   	<td valign="center" align="center" width="50%" >
+	 	   		<button onclick="saveModel()">Modelo</button> </td>
+	 	   </tr>	 	   
+ 	  </table>
+       <a href = "javascript:void(0)" 
+       onclick = "document.getElementById('light3').style.display='none';
+       document.getElementById('fade3').style.display='none'">close</a>
+
+ </div>
+  <div id="fade3" class="black_overlay"></div>
+
+  <div id="light4" class="white_content3"> 
+ 	   <H2 style="text-align:center; margin-top:0px;">Cargar el archivo:</H2>
+ 	   <table border="0" align="center" width="90%" height="15%">
+	 	   <tr>	 	   	
+	 	   	<td valign="center" align="center" width="50%" >
+	 	   		<input type="file" id="fileToLoad" class="upload  fileUpload btn btn-primary" />
+	 	   	</td>
+	 	   	<td valign="center" align="center" width="50%" >
+	 	   		<button class="btn2 fileUpload btn2 btn-primary" onclick="loadModel()" >Cargar</button>
+	 	   	</td>
+	 	   </tr>	 	   
+ 	  </table>
+       <a href = "javascript:void(0)" 
+       onclick = "document.getElementById('light4').style.display='none';
+       document.getElementById('fade4').style.display='none'">close</a>
+
+ </div>
+  <div id="fade4" class="black_overlay"></div>
 
 <table id="window" border="3" height="100%" width="100%" cellspacing="0">
 	<tr id="fil1">
@@ -926,7 +1036,9 @@
 			   	</button>
 
 				<button class="btn1 icon-visibility" onclick="changeView()" ></button>
-				<button class="btn1 icon-save" onclick="save()" ></button>
+				<button class="btn1 icon-save" onclick="decideSave()" ></button>		
+				<button class="btn1 icon-file_upload fileUpload btn btn-primary" onclick="decideLoad()" ></button>
+
 				<hr width=100%>
 				<button id="b1" class="btn1 icon-mode_edit"></button>
 				<button id="b2" class="btn1 icon-border_color"></button>
