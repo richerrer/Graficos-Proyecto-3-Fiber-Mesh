@@ -77,11 +77,10 @@
 		/*si el mouse se encuentra presionado*/
 		var pressed = false;
 
-		var model, model1;
-
 		var strDownloadMime = "image/octet-stream";
 
-		var savedObject = [];
+		/* Guarda los modelos pertenecientes a los triangulos*/
+		var savedModels = [];
 
 		function webGLStart() 
 		{
@@ -467,7 +466,7 @@
 			
 			/* Realizo la triangulacion dandole la coordenada en Z */
 			var object3D = generate3dObject(spine,resultPlanePruning,samplePoints2);
-			model = object3D;
+			savedModels.push(object3D);
 			//var tempDir = System.getTempDirectory();
 	
 			//saveObject(object3D);
@@ -479,15 +478,25 @@
 		}
 
 		function saveModel(){
-			var triangles = model;
-			var json = [];
+			var models = savedModels;
+			var json = "";
 			var temp;
-			triangles.forEach(function(triangle,index,array){
-				var identedText = JSON.stringify(triangle);
-				temp = identedText;
-				json.push(identedText);
-			});
 
+			models.forEach(function(triangles,i,a){
+				triangles.forEach(function(triangle,index,array){
+					var identedText = JSON.stringify(triangle);
+					temp = identedText;
+					json = json.concat(identedText);
+					json = json.concat("\n");
+					//json.push(identedText);
+					//json.push("\n");
+				});
+				//json.push(",");
+				json = json.concat("Model\n");
+				//json.push(",Model:\n");
+			});
+			//json.push("");
+			
 		    var textToWrite = json;
 			var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
 			var fileNameToSaveAs = "model.txt";
@@ -525,7 +534,7 @@
 		function loadModel(){
 
 			var json = [];
-			var triangles = [];
+			var models = [];
 
 			var fileToLoad = document.getElementById("fileToLoad").files[0];
 			//console.info("el archivo es ",fileToLoad);
@@ -538,27 +547,37 @@
 			fileReader.onload = function(fileLoadedEvent) 
 			{
 				var textFromFileLoaded = fileLoadedEvent.target.result;
-
 				json = textFromFileLoaded;
-				console.info("el string del modelo es ",json);
-				//json es todo el archivo de entrada en una sola cadena de texto
-
-				//json no es un arreglo por tanto no se puede iterar
-				//se debe pasar a un arreglo con un "tokenizer" y dividir cada string que no se de donde a donde va
-				//ni cual es el formato
-				json.forEach(function(js,index,array){
+				json = json.split("Model\n");
 				
-				var newObject = JSON.parse(js);
-				triangles.push(newObject);
+				json.forEach(function(js,index,array){
+					var triangles = [];
+					if(js!=""){
+						js = js.split("\n");
+						js.forEach(function(line,index,array){
+							if(line!=""){
+								var newObject = JSON.parse(line);
+								triangles.push(newObject);
+							}
+						});
+						models.push(triangles);
+					}
 				});
-
+				
+				//console.info("creado",models)
+				models.forEach(function(triangles,index,array){
+					var object3D = draw3dObject(triangles,escena,malla,color);
+					object3DSolid.push(object3D);
+				});
+				
+				savedModels = models;
 			};
 
 			fileReader.readAsText(fileToLoad, "UTF-8");
 
-			var object3D = draw3dObject(triangles,escena,malla,color);
 
-		}
+
+		}	
 
 		function clearCanvas(){
 			/* Remuevo los puntos remuestreados */
@@ -569,11 +588,12 @@
 			//removeObject(finalTrianglesWebGl,escena);
 			/* Remuevo el plano de triangulos finales en 3d*/
 			removeObject(object3DSolid,escena);
+			savedModels = [];
 		}
 
 		function clearLast(){
 			removeObject(object3DSolid.pop(),escena);
-
+			savedModels.pop();
 		}
 
 
@@ -896,6 +916,120 @@
 		    return r + "," + g + "," + b;
 		}
 
+		function saveModel2(){
+			var models = savedModels;
+			var json = "";
+			var temp;
+
+			models.forEach(function(model,i,a){
+				var triangles = model.triangles;
+				var type = model.type;
+				json = json.concat(type,"type:");
+				triangles.forEach(function(triangle,index,array){
+
+					var identedText = JSON.stringify(triangle);
+					temp = identedText;
+					json = json.concat(identedText);
+					json = json.concat("\n");
+					//json.push(identedText);
+					//json.push("\n");
+				});
+				//json.push(",");
+				json = json.concat("Model\n");
+				//json.push(",Model:\n");
+			});
+			//json.push("");
+			
+		    var textToWrite = json;
+			var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
+			var fileNameToSaveAs = "model.txt";
+
+			var downloadLink = document.createElement("a");
+			downloadLink.download = fileNameToSaveAs;
+			downloadLink.innerHTML = "Download File";
+
+			if (window.webkitURL != null)
+			{	// Chrome allows the link to be clicked without actually adding it to the DOM.
+				downloadLink.href = window.webkitURL.createObjectURL(textFileAsBlob);
+			}
+			else
+			{	// Firefox requires the link to be added to the DOM before it can be clicked.
+				downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
+				downloadLink.onclick = destroyClickedElement;
+				downloadLink.style.display = "none";
+				document.body.appendChild(downloadLink);
+			}
+
+			downloadLink.click();
+	 			/*var triangles2 = [];
+				json.forEach(function(js,index,array){
+					var newObject = JSON.parse(js);
+					triangles2.push(newObject);
+				});
+				draw3dObject(triangles2,escena,false,"rgb(255,255,255)");*/
+		}
+
+		function destroyClickedElement2(event)
+		{
+			document.body.removeChild(event.target);
+		}
+
+		function loadModel2(){
+
+			var json = [];
+			var models = [];
+
+			var fileToLoad = document.getElementById("fileToLoad").files[0];
+			//console.info("el archivo es ",fileToLoad);
+			var fileReader = new FileReader();
+
+			//alert("Modelo cargado");
+			document.getElementById('light4').style.display='none';
+      		document.getElementById('fade4').style.display='none'
+			clearCanvas();
+			fileReader.onload = function(fileLoadedEvent) 
+			{
+				var textFromFileLoaded = fileLoadedEvent.target.result;
+				json = textFromFileLoaded;
+				json = json.split("Model\n");
+				
+				json.forEach(function(js,index,array){
+					var triangles = [];
+					if(js!=""){
+						js = js.split("type:");
+						var type = js[0];
+						js = js[1];
+						if(js!=""){
+							js = js.split("\n");
+							js.forEach(function(line,index,array){
+								if(line!=""){
+									var newObject = JSON.parse(line);
+									triangles.push(newObject);
+								}
+							});
+							if(type == "0"){
+								var object3D = draw3dObject(triangles,escena,malla,color);
+								object3DSolid.push(object3D);
+							}
+						}
+						console.info("type",type,"js",js)	
+					}
+				});
+				
+				//console.info("creado",models)
+				/*models.forEach(function(triangles,index,array){
+					var object3D = draw3dObject(triangles,escena,malla,color);
+					object3DSolid.push(object3D);
+				});*/
+				
+				savedModels = models;
+			};
+
+			fileReader.readAsText(fileToLoad, "UTF-8");
+
+
+
+		}	
 
 	</script>
 </head>

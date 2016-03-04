@@ -281,6 +281,7 @@ function sweepRings(rings,lastPoint,malla,escena,color){
 	var object3Dextrussion = generateMesh3dObject2(finalTriangles,malla,color);
 	escena.add(object3Dextrussion);
 	
+	savedModels.push(finalTriangles);
 	return object3Dextrussion;
 }
 
